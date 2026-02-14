@@ -1,0 +1,17 @@
+
+> clali@0.0.0 build
+> tsc -b && vite build
+
+[31mfailed to load config from C:\Mini Project\CLALI\vite.config.ts[39m
+[31merror during build:
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    at Ha (file:///C:/Mini%20Project/CLALI/node_modules/tailwindcss/dist/chunk-CT46QCH7.mjs:38:1643)
+    at file:///C:/Mini%20Project/CLALI/node_modules/.vite-temp/vite.config.ts.timestamp-1771067329936-cf76bb2b4e52d8.mjs:12:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:377:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:671:26)
+    at async loadConfigFromBundledFile (file:///C:/Mini%20Project/CLALI/node_modules/vite/dist/node/chunks/config.js:35909:12)
+    at async bundleAndLoadConfigFile (file:///C:/Mini%20Project/CLALI/node_modules/vite/dist/node/chunks/config.js:35797:17)
+    at async loadConfigFromFile (file:///C:/Mini%20Project/CLALI/node_modules/vite/dist/node/chunks/config.js:35764:42)
+    at async resolveConfig (file:///C:/Mini%20Project/CLALI/node_modules/vite/dist/node/chunks/config.js:35413:22)
+    at async createBuilder (file:///C:/Mini%20Project/CLALI/node_modules/vite/dist/node/chunks/config.js:33875:19)
+    at async CAC.<anonymous> (file:///C:/Mini%20Project/CLALI/node_modules/vite/dist/node/cli.js:629:10)[39m
