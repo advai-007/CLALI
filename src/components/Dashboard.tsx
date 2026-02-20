@@ -1,8 +1,10 @@
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, BookOpen, Calculator, Play, Flame, Trophy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     return (
         <div className="min-h-screen text-text-dark font-lexend transition-colors duration-300 overflow-x-hidden">
             <div className="max-w-4xl mx-auto px-6 py-8 min-h-screen flex flex-col relative">
@@ -83,6 +85,7 @@ const Dashboard = () => {
                             textColor="text-teal-900"
                             iconColor="text-emerald-500"
                             buttonColor="text-emerald-500"
+                            onClick={() => navigate('/reading')}
                         />
 
                         {/* Math Card */}
@@ -145,10 +148,12 @@ interface ModuleCardProps {
     textColor: string;
     iconColor: string;
     buttonColor: string;
+    onClick?: () => void;
 }
 
-const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, textColor, iconColor, buttonColor }: ModuleCardProps) => (
+const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, textColor, iconColor, buttonColor, onClick }: ModuleCardProps) => (
     <motion.button
+        onClick={onClick}
         whileHover={{ scale: 1.02, y: -5 }}
         whileTap={{ scale: 0.98 }}
         className={`group relative w-full h-64 rounded-[2rem] overflow-hidden ${bgColor} shadow-card hover:shadow-float flex flex-col justify-between p-6 cursor-pointer border-4 border-transparent hover:border-white/50 transition-all`}

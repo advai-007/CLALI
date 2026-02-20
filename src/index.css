@@ -11,6 +11,8 @@
     --color-yellow-soft: #FFF3B0;
     --color-sky-soft: #A7D8F5;
     --color-text-dark: #2D3748;
+    --color-mint: #d1f6e7;
+    --color-pastel-yellow: #fef9c3;
 
     --shadow-soft: 0 10px 40px -10px rgba(167, 209, 246, 0.3);
     --shadow-card: 0 12px 32px -8px rgba(0, 0, 0, 0.05);
@@ -20,6 +22,9 @@
     --shadow-pop: 0 6px 0px 0px rgba(0, 0, 0, 0.1);
     --shadow-glow: 0 0 20px 5px rgba(255, 255, 255, 0.6);
 }
+
+/* Force dark variant to work with class strategy */
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
     font-family: var(--font-lexend);
