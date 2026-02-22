@@ -2,12 +2,17 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, ArrowRight, School, Globe, Moon, Sun } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../utils/supabase';
 
 const LoginPage = () => {
     const navigate = useNavigate();
     const [role, setRole] = useState<'parent' | 'teacher'>('parent');
     const [showPassword, setShowPassword] = useState(false);
     const [isDark, setIsDark] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isDark) {
@@ -17,9 +22,27 @@ const LoginPage = () => {
         }
     }, [isDark]);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        navigate('/dashboard');
+        setError(null);
+        setLoading(true);
+
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) {
+                setError(error.message);
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred during login.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -107,6 +130,13 @@ const LoginPage = () => {
                                 </label>
                             </div>
 
+                            {/* Error Message */}
+                            {error && (
+                                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3 text-red-600 dark:text-red-400">
+                                    <div className="flex-1 text-sm font-medium">{error}</div>
+                                </div>
+                            )}
+
                             {/* Form */}
                             <form onSubmit={handleLogin} className="space-y-6">
                                 <div className="space-y-2">
@@ -115,8 +145,11 @@ const LoginPage = () => {
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                                         <input
                                             type="text"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             placeholder="e.g., alex@example.com"
                                             className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                                            required
                                         />
                                     </div>
                                 </div>
@@ -130,8 +163,11 @@ const LoginPage = () => {
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                                         <input
                                             type={showPassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
                                             placeholder="••••••••"
                                             className="w-full pl-12 pr-12 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent outline-none transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                                            required
                                         />
                                         <button
                                             type="button"
@@ -154,9 +190,10 @@ const LoginPage = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-[var(--color-primary)] hover:opacity-90 text-slate-900 font-bold py-4 rounded-full shadow-lg shadow-[var(--color-primary)]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                    disabled={loading}
+                                    className="w-full bg-[var(--color-primary)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 font-bold py-4 rounded-full shadow-lg shadow-[var(--color-primary)]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                 >
-                                    <span>Login to Dashboard</span>
+                                    <span>{loading ? 'Logging in...' : 'Login to Dashboard'}</span>
                                     <ArrowRight size={20} />
                                 </button>
                             </form>

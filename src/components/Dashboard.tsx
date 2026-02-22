@@ -1,10 +1,35 @@
+import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, BookOpen, Calculator, Play, Flame, Trophy } from 'lucide-react';
+import { Settings, BookOpen, Calculator, Play, Flame, Trophy, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { sensorBridge } from '../utils/tracking/SensorBridge';
+import { featureExtractor, type ExtractedFeatures } from '../utils/tracking/FeatureExtractor';
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const [debugFeatures, setDebugFeatures] = useState<ExtractedFeatures | null>(null);
+
+    useEffect(() => {
+        // Connect bridge to extractor
+        const bridgeUnsub = sensorBridge.subscribe(featureExtractor.processRawData);
+
+        // Connect extractor to our debug UI
+        const featureUnsub = featureExtractor.subscribe((features) => {
+            setDebugFeatures(features);
+        });
+
+        // Start them up
+        sensorBridge.start();
+        featureExtractor.start();
+
+        return () => {
+            bridgeUnsub();
+            featureUnsub();
+            sensorBridge.stop();
+            featureExtractor.stop();
+        };
+    }, []);
     return (
         <div className="min-h-screen text-text-dark font-lexend transition-colors duration-300 overflow-x-hidden">
             <div className="max-w-4xl mx-auto px-6 py-8 min-h-screen flex flex-col relative">
@@ -133,6 +158,39 @@ const Dashboard = () => {
                     </section>
 
                 </main>
+
+                {/* Metrics Debug Panel (Bottom Left) */}
+                {debugFeatures && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="fixed bottom-6 left-6 z-50 bg-slate-900/90 text-green-400 font-mono text-xs p-5 rounded-2xl shadow-float backdrop-blur-md border border-slate-700 pointer-events-none transition-all w-72"
+                    >
+                        <div className="flex items-center gap-2 mb-3 text-white border-b border-slate-700 pb-2">
+                            <Activity size={16} className="text-emerald-400" />
+                            <span className="font-bold tracking-wider">TRACKING DEBUG</span>
+                        </div>
+                        <div className="grid grid-cols-[1fr_auto] gap-y-2 text-sm">
+                            <span className="text-slate-400">Idle Status</span>
+                            <span className={debugFeatures.isIdle ? 'text-orange-400' : 'text-emerald-400'}>{debugFeatures.isIdle ? 'IDLE' : 'ACTIVE'}</span>
+
+                            <span className="text-slate-400">Tab Visible</span>
+                            <span className={debugFeatures.isVisible ? 'text-emerald-400' : 'text-orange-400'}>{debugFeatures.isVisible ? 'YES' : 'NO'}</span>
+
+                            <span className="text-slate-400">Frantic Taps</span>
+                            <span className={debugFeatures.franticTaps > 0 ? 'text-orange-400 font-bold' : ''}>{debugFeatures.franticTaps}</span>
+
+                            <span className="text-slate-400">Scroll YoYo</span>
+                            <span className={debugFeatures.scrollYoYoCount > 0 ? 'text-orange-400 font-bold' : ''}>{debugFeatures.scrollYoYoCount}</span>
+
+                            <span className="text-slate-400">Max Hold</span>
+                            <span>{debugFeatures.touchHoldDuration}ms</span>
+
+                            <span className="text-slate-400">Motion Mag</span>
+                            <span>{debugFeatures.motionMagnitude.toFixed(2)}</span>
+                        </div>
+                    </motion.div>
+                )}
             </div>
         </div>
     );
