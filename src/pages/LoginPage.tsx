@@ -36,7 +36,11 @@ const LoginPage = () => {
             if (error) {
                 setError(error.message);
             } else {
-                navigate('/dashboard');
+                if (role === 'teacher') {
+                    navigate('/teacher-dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             }
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred during login.');

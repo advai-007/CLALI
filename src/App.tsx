@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import LoginPage from './pages/LoginPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import ReadingModule from './pages/ReadingModule';
+import TeacherDashboard from './pages/TeacherDashboard';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -18,6 +19,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher-dashboard"
+            element={
+              <ProtectedRoute>
+                <TeacherDashboard />
               </ProtectedRoute>
             }
           />
