@@ -1,8 +1,22 @@
 import { supabase } from '../utils/supabase';
+import type { Database } from '../types/supabase';
 
-// This is a generic service file for Supabase database operations.
-// You can create more specific files later (e.g., studentService.ts) 
-// as your application grows.
+// Helper type to get the table names
+type Tables = keyof Database['public']['Tables'];
+
+// Helper type to get the Row type for a specific table
+type Row<T extends Tables> = Database['public']['Tables'][T]['Row'];
+
+// Helper type to get the Insert type for a specific table
+type Insert<T extends Tables> = Database['public']['Tables'][T]['Insert'];
+
+// Helper type to get the Update type for a specific table
+type Update<T extends Tables> = Database['public']['Tables'][T]['Update'];
+
+// Helper type for tables that have a string 'id' column
+type TablesWithId = {
+    [K in Tables]: Database['public']['Tables'][K]['Row'] extends { id: string } ? K : never
+}[Tables];
 
 export const dbService = {
     /**
@@ -10,13 +24,14 @@ export const dbService = {
      * @param table The name of the table in Supabase
      * @param select The columns to select (defaults to '*')
      */
-    async getAll(table: string, select = '*') {
+    async getAll<T extends Tables>(table: T, select = '*') {
         const { data, error } = await supabase
             .from(table)
             .select(select);
 
         if (error) throw error;
-        return data;
+        // Suppress complex union type errors from Supabase client
+        return data as unknown as Row<T>[];
     },
 
     /**
@@ -25,15 +40,15 @@ export const dbService = {
      * @param id The ID of the record
      * @param select The columns to select (defaults to '*')
      */
-    async getById(table: string, id: string | number, select = '*') {
+    async getById<T extends TablesWithId>(table: T, id: string, select = '*') {
         const { data, error } = await supabase
             .from(table)
             .select(select)
-            .eq('id', id)
+            .eq('id' as any, id)
             .single();
 
         if (error) throw error;
-        return data;
+        return data as unknown as Row<T>;
     },
 
     /**
@@ -41,15 +56,15 @@ export const dbService = {
      * @param table The name of the table
      * @param payload The data to insert
      */
-    async create(table: string, payload: any) {
+    async create<T extends Tables>(table: T, payload: Insert<T>) {
         const { data, error } = await supabase
             .from(table)
-            .insert([payload])
+            .insert(payload as any)
             .select()
             .single();
 
         if (error) throw error;
-        return data;
+        return data as unknown as Row<T>;
     },
 
     /**
@@ -58,16 +73,16 @@ export const dbService = {
      * @param id The ID of the record to update
      * @param payload The new data
      */
-    async update(table: string, id: string | number, payload: any) {
+    async update<T extends TablesWithId>(table: T, id: string, payload: Update<T>) {
         const { data, error } = await supabase
             .from(table)
-            .update(payload)
-            .eq('id', id)
+            .update(payload as any)
+            .eq('id' as any, id)
             .select()
             .single();
 
         if (error) throw error;
-        return data;
+        return data as unknown as Row<T>;
     },
 
     /**
@@ -75,11 +90,11 @@ export const dbService = {
      * @param table The name of the table
      * @param id The ID of the record to delete
      */
-    async delete(table: string, id: string | number) {
+    async delete<T extends TablesWithId>(table: T, id: string) {
         const { error } = await supabase
             .from(table)
             .delete()
-            .eq('id', id);
+            .eq('id' as any, id);
 
         if (error) throw error;
         return true;
