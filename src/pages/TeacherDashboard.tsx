@@ -28,19 +28,27 @@ const TeacherDashboard: React.FC = () => {
                         <span className="material-icons-round">psychology</span>
                     </div>
                     <nav className="flex flex-col gap-6 flex-1">
-                        <button className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-white hover:bg-slate-700 transition-colors">
-                            <span className="material-icons-round">dashboard</span>
+                        <button
+                            className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-white hover:bg-[#3b82f6] hover:shadow-lg hover:shadow-blue-500/20 hover:scale-110 active:scale-95 transition-all duration-300"
+                            onClick={() => navigate('/teacher-dashboard')}
+                            title="Dashboard"
+                        >
+                            <span className="material-icons-round">person</span>
                         </button>
-                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                        <button
+                            className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300"
+                            onClick={() => navigate('/student-analysis')}
+                            title="Student Analysis"
+                        >
                             <span className="material-icons-round">groups</span>
                         </button>
-                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
                             <span className="material-icons-round">assignment</span>
                         </button>
-                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
                             <span className="material-icons-round">analytics</span>
                         </button>
-                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
                             <span className="material-icons-round">settings</span>
                         </button>
                     </nav>
@@ -48,10 +56,10 @@ const TeacherDashboard: React.FC = () => {
                         <button
                             onClick={handleLogout}
                             title="Logout"
-                            className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors">
+                            className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/20 hover:scale-110 active:scale-95 transition-all duration-300">
                             <span className="material-icons-round">logout</span>
                         </button>
-                        <img alt="Profile Avatar" className="w-10 h-10 rounded-xl object-cover border-2 border-slate-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGoDb-nuQrQfKR8FGBsdEDXg8F4iYljtH_DmGqzgvC2reLZAyvDwINSIMhkxd-C3yjegIQPzxrtPThw7Fm8N2Gd2krKOEOJA35ZFtdbryUyHK9eP26XWZerbIbOh97xuDs1EBWGLFah6Fo8LmLewUOH92R9WFnCj_rYk6_55tagtxTNyIAywhiKJcVFww7kWKjzJBPDMBSAJTz9KYFAIK0vX5ydwlkM7Ou4SSCFPY34dM0xbqaa3y9ZG8O9BGt1aPgKXs8lC1742k" />
+                        <img alt="Profile Avatar" className="w-10 h-10 rounded-xl object-cover border-2 border-slate-700 hover:border-[#3b82f6] hover:scale-110 cursor-pointer transition-all duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGoDb-nuQrQfKR8FGBsdEDXg8F4iYljtH_DmGqzgvC2reLZAyvDwINSIMhkxd-C3yjegIQPzxrtPThw7Fm8N2Gd2krKOEOJA35ZFtdbryUyHK9eP26XWZerbIbOh97xuDs1EBWGLFah6Fo8LmLewUOH92R9WFnCj_rYk6_55tagtxTNyIAywhiKJcVFww7kWKjzJBPDMBSAJTz9KYFAIK0vX5ydwlkM7Ou4SSCFPY34dM0xbqaa3y9ZG8O9BGt1aPgKXs8lC1742k" />
                     </div>
                 </aside>
                 <main className="flex-1 overflow-y-auto p-8 relative">
@@ -69,17 +77,17 @@ const TeacherDashboard: React.FC = () => {
                                     <span className="material-icons-round text-xs">keyboard_command_key</span>K
                                 </span>
                             </div>
-                            <button className="w-10 h-10 rounded-full flex items-center justify-center bg-card-light dark:bg-card-dark shadow-sm text-slate-600 dark:text-slate-300 transition-colors" onClick={() => setIsDark(!isDark)}>
-                                <span className="material-icons-round">dark_mode</span>
+                            <button className="w-10 h-10 rounded-full flex items-center justify-center bg-card-light dark:bg-card-dark shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all duration-300" onClick={() => setIsDark(!isDark)}>
+                                <span className="material-icons-round hover:rotate-12 transition-transform duration-300">dark_mode</span>
                             </button>
-                            <button className="flex items-center gap-2 bg-card-light dark:bg-card-dark shadow-sm px-4 py-2 rounded-full font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                            <button className="flex items-center gap-2 bg-card-light dark:bg-card-dark shadow-sm px-4 py-2 rounded-full font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all duration-300">
                                 <span className="material-icons-round text-lg">share</span>
                                 Share
                             </button>
                         </div>
                     </header>
                     <div className="grid grid-cols-12 gap-6">
-                        <div className="col-span-12 xl:col-span-7 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div className="col-span-12 xl:col-span-7 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-2">
                                     <h2 className="font-bold text-lg">Active Class Modules</h2>
@@ -100,7 +108,7 @@ const TeacherDashboard: React.FC = () => {
                                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                                         <tr className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="py-4">
-                                                <div className="font-semibold">Advanced Calculus</div>
+                                                <div className="font-semibold">Maths</div>
                                                 <div className="text-xs text-slate-400">Mathematics Group B</div>
                                             </td>
                                             <td className="py-4">
@@ -131,7 +139,7 @@ const TeacherDashboard: React.FC = () => {
                                         </tr>
                                         <tr className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="py-4">
-                                                <div className="font-semibold">Logic Puzzles</div>
+                                                <div className="font-semibold">Reading</div>
                                                 <div className="text-xs text-slate-400">Critical Thinking</div>
                                             </td>
                                             <td className="py-4">
@@ -163,7 +171,7 @@ const TeacherDashboard: React.FC = () => {
                                 </table>
                             </div>
                         </div>
-                        <div className="col-span-12 xl:col-span-5 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div className="col-span-12 xl:col-span-5 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-2">
                                     <h2 className="font-bold text-lg">Cognitive Load Overview</h2>
@@ -222,7 +230,7 @@ const TeacherDashboard: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="col-span-12 lg:col-span-3 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div className="col-span-12 lg:col-span-3 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-2">
                                     <h2 className="font-bold text-lg">Engagement</h2>
@@ -272,7 +280,7 @@ const TeacherDashboard: React.FC = () => {
                                 Video content shows the highest engagement, while text-heavy materials may require more scaffolds.
                             </p>
                         </div>
-                        <div className="col-span-12 lg:col-span-5 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+                        <div className="col-span-12 lg:col-span-5 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-2">
                                     <h2 className="font-bold text-lg">Recommended Interventions</h2>
@@ -299,7 +307,7 @@ const TeacherDashboard: React.FC = () => {
                                         </svg>
                                     </div>
                                     <div className="space-y-4 min-w-[120px]">
-                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/40 p-2 pr-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/40 p-2 pr-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:scale-105 transition-transform cursor-pointer">
                                             <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
                                                 <span className="material-icons-round text-emerald-600 dark:text-emerald-400 text-sm">upgrade</span>
                                             </div>
@@ -308,7 +316,7 @@ const TeacherDashboard: React.FC = () => {
                                                 <span className="text-sm font-bold">$3.2k</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/40 p-2 pr-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/40 p-2 pr-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:scale-105 transition-transform cursor-pointer">
                                             <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
                                                 <span className="material-icons-round text-amber-600 dark:text-amber-400 text-sm">psychology</span>
                                             </div>
@@ -323,7 +331,7 @@ const TeacherDashboard: React.FC = () => {
                             <p className="text-[11px] text-center text-slate-500 mt-2 italic">Most students are experiencing high intrinsic load; consider simplifying visual assets.</p>
                         </div>
                         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                            <div className="flex-1 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                            <div className="flex-1 bg-card-light dark:bg-card-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                                 <div className="flex justify-between items-center mb-6">
                                     <div className="flex items-center gap-2">
                                         <h2 className="font-bold text-lg">Learning Time</h2>
@@ -345,8 +353,8 @@ const TeacherDashboard: React.FC = () => {
                                     <span className="text-slate-400">Team spent 18% more time vs last month.</span>
                                 </div>
                             </div>
-                            <div className="bg-[#3b82f6] p-6 rounded-xl shadow-xl shadow-blue-500/20 text-white">
-                                <div className="flex items-center gap-2 mb-8 opacity-80">
+                            <div className="bg-[#3b82f6] p-6 rounded-xl shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 hover:-translate-y-1 transition-all duration-300 text-white cursor-pointer group">
+                                <div className="flex items-center gap-2 mb-8 opacity-80 group-hover:opacity-100 transition-opacity">
                                     <h2 className="font-bold text-sm uppercase tracking-wider">Module Completion Rate</h2>
                                     <span className="material-icons-round text-sm">info</span>
                                 </div>
