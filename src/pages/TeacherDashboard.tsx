@@ -45,7 +45,7 @@ const TeacherDashboard: React.FC = () => {
                         </button>
                     </nav>
                     <div className="flex flex-col gap-6">
-                        <button 
+                        <button
                             onClick={handleLogout}
                             title="Logout"
                             className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors">

@@ -1,9 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import LoginPage from './pages/LoginPage';
 import StudentLoginPage from './pages/StudentLoginPage';
-import ReadingModule from './pages/ReadingModule';
+import ParentDashboard from './pages/ParentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import ReadingModule from './pages/ReadingModule';
+import SignupPage from './pages/SignupPage';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -13,12 +15,14 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/student-login" element={<StudentLoginPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route
-            path="/dashboard"
+            path="/parent-dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <ParentDashboard />
               </ProtectedRoute>
             }
           />
@@ -31,6 +35,7 @@ function App() {
             }
           />
           <Route path="/reading" element={<ReadingModule />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
