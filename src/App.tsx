@@ -8,36 +8,41 @@ import ReadingModule from './pages/ReadingModule';
 import SignupPage from './pages/SignupPage';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { TrackingProvider } from './context/TrackingContext';
+import CalibrationPage from './pages/CalibrationPage';
 
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/student-login" element={<StudentLoginPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route
-            path="/parent-dashboard"
-            element={
-              <ProtectedRoute>
-                <ParentDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/teacher-dashboard"
-            element={
-              <ProtectedRoute>
-                <TeacherDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/reading" element={<ReadingModule />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <TrackingProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/student-login" element={<StudentLoginPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route
+              path="/parent-dashboard"
+              element={
+                <ProtectedRoute>
+                  <ParentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teacher-dashboard"
+              element={
+                <ProtectedRoute>
+                  <TeacherDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/reading" element={<ReadingModule />} />
+            <Route path="/calibration" element={<CalibrationPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </TrackingProvider>
     </AuthProvider>
   );
 }
