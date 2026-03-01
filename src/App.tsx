@@ -4,6 +4,9 @@ import LoginPage from './pages/LoginPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import ParentDashboard from './pages/ParentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
+import AddStudentPage from './pages/AddStudentPage';
+import StudentAnalysis from './pages/StudentAnalysis';
+import ClassManagement from './pages/ClassManagement';
 import ReadingModule from './pages/ReadingModule';
 import SignupPage from './pages/SignupPage';
 import { AuthProvider } from './context/AuthContext';
@@ -34,6 +37,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TeacherDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/add-student"
+              element={
+                <ProtectedRoute>
+                  <AddStudentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student-analysis"
+              element={
+                <ProtectedRoute>
+                  <StudentAnalysis />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/class-management"
+              element={
+                <ProtectedRoute>
+                  <ClassManagement />
                 </ProtectedRoute>
               }
             />
