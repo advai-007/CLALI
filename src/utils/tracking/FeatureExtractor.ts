@@ -7,6 +7,11 @@ export type ExtractedFeatures = {
     isIdle: boolean;
     isVisible: boolean;
     touchHoldDuration: number;
+    // Tablet-specific features
+    tiltVariance: number;
+    avgTouchPressure: number;
+    gripTouchCount: number;
+    orientationChangeRate: number;
 };
 
 export type FeatureCallback = (features: ExtractedFeatures) => void;
@@ -23,12 +28,21 @@ class FeatureExtractor {
     private touchMap = new Map<number, { startTime: number, x: number, y: number }>();
     private maxTouchHold: number = 0;
 
+    // Tablet-specific state
+    private orientationHistory: { beta: number, gamma: number, alpha: number, time: number }[] = [];
+    private pressureReadings: number[] = [];
+    private maxGripTouchCount: number = 0;
+    private lastAlpha: number | null = null;
+    private orientationChangeWindow: { time: number }[] = [];
+
     // Tuning parameters
     private TAP_TIME_WINDOW = 3000; // 3 seconds
     private TAP_DISTANCE_THRESHOLD = 50; // pixels
     private FRANTIC_TAP_THRESHOLD = 4; // 4+ taps in same area in 3s
 
     private SCROLL_TIME_WINDOW = 5000; // 5s for yo-yo detection
+    private ORIENTATION_WINDOW = 5000; // 5s for tilt variance
+    private ORIENTATION_CHANGE_THRESHOLD = 15; // degrees of alpha change to count as a rotation
 
     private emitInterval: number | null = null;
 
@@ -61,6 +75,12 @@ class FeatureExtractor {
             case 'idle':
                 this.isIdleState = true;
                 break;
+            case 'orientation':
+                this.processOrientation(event.data, now);
+                break;
+            case 'grip':
+                this.processGrip(event.data);
+                break;
         }
     };
 
@@ -72,6 +92,16 @@ class FeatureExtractor {
             this.tapHistory.push({ x: data.x, y: data.y, time });
             // Cleanup old taps
             this.tapHistory = this.tapHistory.filter(t => time - t.time <= this.TAP_TIME_WINDOW);
+
+            // Track touch pressure if available
+            if (data.force !== undefined && data.force > 0) {
+                this.pressureReadings.push(data.force);
+            }
+        } else if (data.action === 'move') {
+            // Track pressure during moves too
+            if (data.force !== undefined && data.force > 0) {
+                this.pressureReadings.push(data.force);
+            }
         } else if (data.action === 'end') {
             const touch = this.touchMap.get(data.id);
             if (touch) {
@@ -90,11 +120,33 @@ class FeatureExtractor {
     }
 
     private processMotion(data: { x: number, y: number, z: number }) {
-        // Simple magnitude of motion vector (minus 9.8 for gravity is handled by relying on changes or device orientation generally, 
-        // but here we just approximate magnitude)
+        // Simple magnitude of motion vector
         const magnitude = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
         // smoothing
         this.currentMotion = (this.currentMotion * 0.8) + (magnitude * 0.2);
+    }
+
+    private processOrientation(data: { alpha: number, beta: number, gamma: number }, time: number) {
+        this.orientationHistory.push({ beta: data.beta, gamma: data.gamma, alpha: data.alpha, time });
+        this.orientationHistory = this.orientationHistory.filter(o => time - o.time <= this.ORIENTATION_WINDOW);
+
+        // Track significant orientation (alpha) changes for orientationChangeRate
+        if (this.lastAlpha !== null) {
+            const alphaDelta = Math.abs(data.alpha - this.lastAlpha);
+            // Handle wrap-around at 360 degrees
+            const normalizedDelta = Math.min(alphaDelta, 360 - alphaDelta);
+            if (normalizedDelta > this.ORIENTATION_CHANGE_THRESHOLD) {
+                this.orientationChangeWindow.push({ time });
+            }
+        }
+        this.lastAlpha = data.alpha;
+        this.orientationChangeWindow = this.orientationChangeWindow.filter(o => time - o.time <= this.ORIENTATION_WINDOW);
+    }
+
+    private processGrip(data: { touchCount: number }) {
+        if (data.touchCount > this.maxGripTouchCount) {
+            this.maxGripTouchCount = data.touchCount;
+        }
     }
 
     private computeFranticTaps(): number {
@@ -134,6 +186,26 @@ class FeatureExtractor {
         return directionChanges;
     }
 
+    private computeTiltVariance(): number {
+        if (this.orientationHistory.length < 2) return 0;
+
+        // Compute variance of beta and gamma combined
+        const betas = this.orientationHistory.map(o => o.beta);
+        const gammas = this.orientationHistory.map(o => o.gamma);
+
+        const betaVariance = this.variance(betas);
+        const gammaVariance = this.variance(gammas);
+
+        // Combined tilt variance
+        return betaVariance + gammaVariance;
+    }
+
+    private variance(values: number[]): number {
+        if (values.length < 2) return 0;
+        const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+        return values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+    }
+
     public start() {
         if (this.emitInterval) return;
 
@@ -150,16 +222,30 @@ class FeatureExtractor {
             const recordedMaxHold = Math.max(currentHold, this.maxTouchHold);
             this.maxTouchHold = 0; // reset max for next frame
 
+            // Compute average touch pressure
+            const avgPressure = this.pressureReadings.length > 0
+                ? this.pressureReadings.reduce((s, v) => s + v, 0) / this.pressureReadings.length
+                : 0;
+
             const features: ExtractedFeatures = {
                 franticTaps: this.computeFranticTaps(),
                 scrollYoYoCount: this.computeScrollYoYo(),
                 motionMagnitude: this.currentMotion,
                 isIdle: this.isIdleState,
                 isVisible: this.isVisibleState,
-                touchHoldDuration: recordedMaxHold
+                touchHoldDuration: recordedMaxHold,
+                // Tablet features
+                tiltVariance: this.computeTiltVariance(),
+                avgTouchPressure: avgPressure,
+                gripTouchCount: this.maxGripTouchCount,
+                orientationChangeRate: this.orientationChangeWindow.length,
             };
 
             this.listeners.forEach(cb => cb(features));
+
+            // Reset per-frame accumulators
+            this.pressureReadings = [];
+            this.maxGripTouchCount = 0;
 
         }, 500); // UI update rate
     }
@@ -173,3 +259,4 @@ class FeatureExtractor {
 }
 
 export const featureExtractor = new FeatureExtractor();
+

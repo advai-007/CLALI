@@ -1,5 +1,5 @@
 export type RawSensorData = {
-    type: 'touch' | 'scroll' | 'motion' | 'visibility' | 'idle';
+    type: 'touch' | 'scroll' | 'motion' | 'visibility' | 'idle' | 'orientation' | 'grip';
     timestamp: number;
     data: any;
 };
@@ -12,11 +12,15 @@ class SensorBridge {
     private idleCheckInterval: number | null = null;
     private isListening = false;
 
+    // Track active touches for grip detection
+    private activeTouches = new Set<number>();
+
     private boundHandleTouchStart = this.handleTouchStart.bind(this);
     private boundHandleTouchMove = this.handleTouchMove.bind(this);
     private boundHandleTouchEnd = this.handleTouchEnd.bind(this);
     private boundHandleScroll = this.handleScroll.bind(this);
     private boundHandleDeviceMotion = this.handleDeviceMotion.bind(this);
+    private boundHandleDeviceOrientation = this.handleDeviceOrientation.bind(this);
     private boundHandleVisibility = this.handleVisibility.bind(this);
 
     subscribe(callback: SensorCallback) {
@@ -31,16 +35,45 @@ class SensorBridge {
         this.listeners.forEach(cb => cb(event));
     }
 
-    public start() {
+    public async requestPermissions(): Promise<boolean> {
+        let granted = true;
+        // iOS 13+ requires explicit permission for device sensors
+        try {
+            const DevOrientEvent = DeviceOrientationEvent as any;
+            if (typeof DevOrientEvent.requestPermission === 'function') {
+                const result = await DevOrientEvent.requestPermission();
+                if (result !== 'granted') granted = false;
+            }
+        } catch {
+            // Not iOS or permission API not available — that's OK
+        }
+        try {
+            const DevMotionEvent = DeviceMotionEvent as any;
+            if (typeof DevMotionEvent.requestPermission === 'function') {
+                const result = await DevMotionEvent.requestPermission();
+                if (result !== 'granted') granted = false;
+            }
+        } catch {
+            // Not iOS or permission API not available — that's OK
+        }
+        return granted;
+    }
+
+    public async start() {
         if (this.isListening) return;
         this.isListening = true;
         this.lastInputTimestamp = Date.now();
 
+        // Request device sensor permissions (iOS 13+)
+        await this.requestPermissions();
+
         window.addEventListener('touchstart', this.boundHandleTouchStart, { passive: true });
         window.addEventListener('touchmove', this.boundHandleTouchMove, { passive: true });
         window.addEventListener('touchend', this.boundHandleTouchEnd, { passive: true });
+        window.addEventListener('touchcancel', this.boundHandleTouchEnd, { passive: true });
         window.addEventListener('scroll', this.boundHandleScroll, { passive: true });
         window.addEventListener('devicemotion', this.boundHandleDeviceMotion, { passive: true });
+        window.addEventListener('deviceorientation', this.boundHandleDeviceOrientation, { passive: true });
         document.addEventListener('visibilitychange', this.boundHandleVisibility);
 
         // Check for idle time every second
@@ -59,14 +92,17 @@ class SensorBridge {
         window.removeEventListener('touchstart', this.boundHandleTouchStart);
         window.removeEventListener('touchmove', this.boundHandleTouchMove);
         window.removeEventListener('touchend', this.boundHandleTouchEnd);
+        window.removeEventListener('touchcancel', this.boundHandleTouchEnd);
         window.removeEventListener('scroll', this.boundHandleScroll);
         window.removeEventListener('devicemotion', this.boundHandleDeviceMotion);
+        window.removeEventListener('deviceorientation', this.boundHandleDeviceOrientation);
         document.removeEventListener('visibilitychange', this.boundHandleVisibility);
 
         if (this.idleCheckInterval) {
             clearInterval(this.idleCheckInterval);
             this.idleCheckInterval = null;
         }
+        this.activeTouches.clear();
     }
 
     private updateActivity() {
@@ -79,9 +115,23 @@ class SensorBridge {
         this.updateActivity();
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
+            this.activeTouches.add(touch.identifier);
             this.dispatch({
                 type: 'touch',
-                data: { action: 'start', id: touch.identifier, x: touch.clientX, y: touch.clientY }
+                data: {
+                    action: 'start',
+                    id: touch.identifier,
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    force: touch.force // 0-1 on supported devices, 0 otherwise
+                }
+            });
+        }
+        // Dispatch grip event when multiple simultaneous touches detected
+        if (this.activeTouches.size >= 3) {
+            this.dispatch({
+                type: 'grip',
+                data: { touchCount: this.activeTouches.size }
             });
         }
     }
@@ -92,7 +142,13 @@ class SensorBridge {
             const touch = e.changedTouches[i];
             this.dispatch({
                 type: 'touch',
-                data: { action: 'move', id: touch.identifier, x: touch.clientX, y: touch.clientY }
+                data: {
+                    action: 'move',
+                    id: touch.identifier,
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    force: touch.force
+                }
             });
         }
     }
@@ -101,9 +157,16 @@ class SensorBridge {
         this.updateActivity();
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches[i];
+            this.activeTouches.delete(touch.identifier);
             this.dispatch({
                 type: 'touch',
-                data: { action: 'end', id: touch.identifier, x: touch.clientX, y: touch.clientY }
+                data: {
+                    action: 'end',
+                    id: touch.identifier,
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    force: 0
+                }
             });
         }
     }
@@ -127,6 +190,21 @@ class SensorBridge {
                     data: { x, y, z }
                 });
             }
+        }
+    }
+
+    private handleDeviceOrientation(e: DeviceOrientationEvent) {
+        // alpha: compass direction (0-360), beta: front-back tilt (-180 to 180),
+        // gamma: left-right tilt (-90 to 90)
+        if (e.alpha !== null || e.beta !== null || e.gamma !== null) {
+            this.dispatch({
+                type: 'orientation',
+                data: {
+                    alpha: e.alpha ?? 0,
+                    beta: e.beta ?? 0,
+                    gamma: e.gamma ?? 0
+                }
+            });
         }
     }
 
