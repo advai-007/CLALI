@@ -1,70 +1,99 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { School, ArrowLeft } from 'lucide-react';
+import { School, ArrowLeft, Loader2 } from 'lucide-react';
+import { getClassByCode, getStudentsByClassId } from '../services/studentApi';
+import type { ClassInfo, StudentInfo } from '../services/studentApi';
 
-// Mock Data
-const MOCK_CLASS = {
-    code: 'LION',
-    name: "Ms. Frizzle's Class",
-    students: [
-        { id: 's1', name: 'Alex', avatar: '🐱', secret: '🍕' },
-        { id: 's2', name: 'Sam', avatar: '🐶', secret: '🚀' },
-        { id: 's3', name: 'Jordan', avatar: '🦊', secret: '⭐' },
-        { id: 's4', name: 'Taylor', avatar: '🐼', secret: '🎈' },
-        { id: 's5', name: 'Casey', avatar: '🐨', secret: '🎨' },
-        { id: 's6', name: 'Riley', avatar: '🐯', secret: '🎵' },
-    ]
-};
-
-const PASSWORD_ICONS = ['🍕', '🚀', '⭐', '🎈', '🎨', '🎵', '⚽', '📚', '🍎'];
+const PASSWORD_ICONS = ['🍕', '🚀', '⭐', '🎈', '🎨', '🎵', '⚽', '📚', '🍎', '🌈', '🎸', '🏀', '🎭', '🍩', '🎯', '🧩', '🎪', '🎲', '🌺', '🍭'];
 
 const StudentLoginPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<'code' | 'student' | 'secret'>('code');
     const [classCode, setClassCode] = useState('');
     const [error, setError] = useState('');
-    const [selectedStudent, setSelectedStudent] = useState<typeof MOCK_CLASS.students[0] | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    // Data from Supabase
+    const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
+    const [students, setStudents] = useState<StudentInfo[]>([]);
+    const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
 
     // Check for saved class code on mount
     useEffect(() => {
         const savedCode = localStorage.getItem('classCode');
-        if (savedCode === MOCK_CLASS.code) {
-            setStep('student');
+        if (savedCode) {
+            setLoading(true);
+            getClassByCode(savedCode).then(async (cls) => {
+                if (cls) {
+                    setClassInfo(cls);
+                    const studentList = await getStudentsByClassId(cls.id);
+                    setStudents(studentList);
+                    setStep('student');
+                }
+                setLoading(false);
+            });
         }
     }, []);
 
-    const handleCodeSubmit = (e: React.FormEvent) => {
+    const handleCodeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (classCode.toUpperCase() === MOCK_CLASS.code) {
-            localStorage.setItem('classCode', MOCK_CLASS.code);
+        setError('');
+        setLoading(true);
+
+        const cls = await getClassByCode(classCode);
+        if (cls) {
+            setClassInfo(cls);
+            localStorage.setItem('classCode', cls.class_code);
+
+            const studentList = await getStudentsByClassId(cls.id);
+            setStudents(studentList);
             setStep('student');
-            setError('');
         } else {
-            setError('Oops! Try "LION"');
+            setError('Oops! That code doesn\'t match any class. Ask your teacher!');
         }
+        setLoading(false);
     };
 
     const handleSwitchClass = () => {
         localStorage.removeItem('classCode');
+        setClassInfo(null);
+        setStudents([]);
         setStep('code');
         setClassCode('');
         setError('');
     };
 
-    const handleStudentSelect = (student: typeof MOCK_CLASS.students[0]) => {
+    const handleStudentSelect = (student: StudentInfo) => {
         setSelectedStudent(student);
         setStep('secret');
     };
 
     const handleSecretAttempt = (icon: string) => {
-        if (selectedStudent && icon === selectedStudent.secret) {
+        if (selectedStudent && icon === selectedStudent.secret_icon) {
+            // Save student session to localStorage
+            localStorage.setItem('studentUser', JSON.stringify({
+                id: selectedStudent.id,
+                full_name: selectedStudent.full_name,
+                avatar: selectedStudent.avatar,
+                class_id: classInfo?.id,
+                class_name: classInfo?.name,
+            }));
             navigate('/dashboard');
         } else {
             setError('Try again!');
             setTimeout(() => setError(''), 1000);
         }
     };
+
+    // Show a loading state while checking saved session
+    if (loading && step === 'code') {
+        return (
+            <div className="min-h-screen bg-[var(--color-background-light)] dark:bg-[#111a21] flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-[var(--color-primary)] animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[var(--color-background-light)] dark:bg-[#111a21] flex flex-col font-display transition-colors duration-300">
@@ -80,7 +109,7 @@ const StudentLoginPage = () => {
                     <button
                         onClick={() => {
                             if (step === 'secret') setStep('student');
-                            else setStep('code');
+                            else handleSwitchClass();
                             setError('');
                         }}
                         className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
@@ -113,13 +142,19 @@ const StudentLoginPage = () => {
                                     placeholder="TYPE HERE"
                                     className="w-full text-center text-4xl font-black tracking-widest py-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-[var(--color-primary)] outline-none uppercase placeholder:text-slate-300 dark:text-white transition-all"
                                     maxLength={6}
+                                    disabled={loading}
                                 />
                                 {error && <p className="text-red-500 font-bold animate-bounce">{error}</p>}
                                 <button
                                     type="submit"
-                                    className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white text-xl font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95"
+                                    disabled={loading || !classCode.trim()}
+                                    className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white text-xl font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                                 >
-                                    Go to Class! 🚀
+                                    {loading ? (
+                                        <><Loader2 className="w-6 h-6 animate-spin" /> Checking...</>
+                                    ) : (
+                                        'Go to Class! 🚀'
+                                    )}
                                 </button>
                             </form>
                         </motion.div>
@@ -136,21 +171,25 @@ const StudentLoginPage = () => {
                         >
                             <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 mb-8">
                                 Who are you?
-                                <span className="block text-lg font-normal text-slate-500 dark:text-slate-400 mt-2">{MOCK_CLASS.name}</span>
+                                <span className="block text-lg font-normal text-slate-500 dark:text-slate-400 mt-2">{classInfo?.name}</span>
                             </h2>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                                {MOCK_CLASS.students.map((student) => (
-                                    <button
-                                        key={student.id}
-                                        onClick={() => handleStudentSelect(student)}
-                                        className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all border-b-8 border-slate-100 dark:border-slate-700 hover:border-[var(--color-primary)] group"
-                                    >
-                                        <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">{student.avatar}</div>
-                                        <div className="text-xl font-bold text-slate-800 dark:text-slate-200">{student.name}</div>
-                                    </button>
-                                ))}
-                            </div>
+                            {students.length === 0 ? (
+                                <p className="text-slate-500 dark:text-slate-400 text-lg">No students in this class yet. Ask your teacher to add you!</p>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                                    {students.map((student) => (
+                                        <button
+                                            key={student.id}
+                                            onClick={() => handleStudentSelect(student)}
+                                            className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all border-b-8 border-slate-100 dark:border-slate-700 hover:border-[var(--color-primary)] group"
+                                        >
+                                            <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">{student.avatar || '👤'}</div>
+                                            <div className="text-xl font-bold text-slate-800 dark:text-slate-200">{student.full_name}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
                             <button
                                 onClick={handleSwitchClass}
@@ -170,12 +209,12 @@ const StudentLoginPage = () => {
                             exit={{ opacity: 0, scale: 0.9 }}
                             className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 text-center"
                         >
-                            <div className="text-6xl mb-4">{selectedStudent.avatar}</div>
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Hello, {selectedStudent.name}!</h2>
+                            <div className="text-6xl mb-4">{selectedStudent.avatar || '👤'}</div>
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Hello, {selectedStudent.full_name}!</h2>
                             <p className="text-slate-500 dark:text-slate-400 mb-8">Tap your secret picture to login.</p>
 
                             <div className="grid grid-cols-3 gap-4">
-                                {PASSWORD_ICONS.map((icon) => (
+                                {PASSWORD_ICONS.slice(0, 9).map((icon) => (
                                     <button
                                         key={icon}
                                         onClick={() => handleSecretAttempt(icon)}

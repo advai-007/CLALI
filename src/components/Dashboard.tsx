@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, BookOpen, Calculator, Play, Flame, Trophy, Activity } from 'lucide-react';
+import { Settings, BookOpen, Calculator, Play, Flame, Trophy, Activity, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { sensorBridge } from '../utils/tracking/SensorBridge';
 import { featureExtractor, type ExtractedFeatures } from '../utils/tracking/FeatureExtractor';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { studentUser, studentSignOut } = useAuth();
     const [debugFeatures, setDebugFeatures] = useState<ExtractedFeatures | null>(null);
 
     useEffect(() => {
@@ -45,13 +47,16 @@ const Dashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group relative cursor-pointer"
                     >
-                        <div className="w-14 h-14 rounded-full border-4 border-white shadow-sm overflow-hidden bg-primary/30">
-                            {/* Placeholder Avatar */}
-                            <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                                alt="User Avatar"
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-14 h-14 rounded-full border-4 border-white shadow-sm overflow-hidden bg-primary/30 flex items-center justify-center">
+                            {studentUser?.avatar ? (
+                                <span className="text-3xl">{studentUser.avatar}</span>
+                            ) : (
+                                <img
+                                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+                                    alt="User Avatar"
+                                    className="w-full h-full object-cover"
+                                />
+                            )}
                         </div>
                     </motion.button>
 
@@ -59,13 +64,26 @@ const Dashboard = () => {
                         <h1 className="text-2xl font-black text-slate-400 uppercase tracking-widest">Clali</h1>
                     </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-primary hover:bg-slate-50 shadow-sm transition-colors cursor-pointer"
-                    >
-                        <Settings size={24} />
-                    </motion.button>
+                    <div className="flex items-center gap-2">
+                        {studentUser && (
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => { studentSignOut(); navigate('/student-login'); }}
+                                className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 shadow-sm transition-colors cursor-pointer"
+                                title="Sign Out"
+                            >
+                                <LogOut size={20} />
+                            </motion.button>
+                        )}
+                        <motion.button
+                            whileHover={{ scale: 1.1, rotate: 90 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-primary hover:bg-slate-50 shadow-sm transition-colors cursor-pointer"
+                        >
+                            <Settings size={24} />
+                        </motion.button>
+                    </div>
                 </header>
 
                 <main className="relative z-10 flex-grow flex flex-col gap-8">
@@ -78,7 +96,7 @@ const Dashboard = () => {
                             className="bg-white rounded-[2.5rem] p-8 shadow-card w-full max-w-2xl mx-auto relative z-0 flex items-center justify-between overflow-visible"
                         >
                             <div className="flex-1 pr-4">
-                                <h2 className="text-4xl md:text-5xl font-black text-slate-700 tracking-tight mb-2">Hi Student!</h2>
+                                <h2 className="text-4xl md:text-5xl font-black text-slate-700 tracking-tight mb-2">Hi {studentUser?.full_name || 'Student'}!</h2>
                                 <p className="text-lg text-slate-500 font-medium">Ready to play and learn?</p>
 
                                 <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-yellow-soft rounded-full shadow-sm border border-yellow-200">
