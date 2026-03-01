@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  worker: {
+    format: 'es'
+  },
+  optimizeDeps: {
+    exclude: ['@mediapipe/tasks-vision']
+  }
 })
