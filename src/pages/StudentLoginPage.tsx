@@ -5,7 +5,10 @@ import { School, ArrowLeft, Loader2 } from 'lucide-react';
 import { getClassByCode, getStudentsByClassId } from '../services/studentApi';
 import type { ClassInfo, StudentInfo } from '../services/studentApi';
 
-const PASSWORD_ICONS = ['🍕', '🚀', '⭐', '🎈', '🎨', '🎵', '⚽', '📚', '🍎', '🌈', '🎸', '🏀', '🎭', '🍩', '🎯', '🧩', '🎪', '🎲', '🌺', '🍭'];
+const PASSWORD_ICONS = [
+    '🍕', '🚀', '⭐', '🍦', '🎨', '🎮', '🎸', '⚽',
+    '🚲', '🍔', '🎧', '🌈', '🍿', '🍩', '🧩', '🧸'
+];
 
 const StudentLoginPage = () => {
     const navigate = useNavigate();
@@ -213,12 +216,12 @@ const StudentLoginPage = () => {
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Hello, {selectedStudent.full_name}!</h2>
                             <p className="text-slate-500 dark:text-slate-400 mb-8">Tap your secret picture to login.</p>
 
-                            <div className="grid grid-cols-3 gap-4">
-                                {PASSWORD_ICONS.slice(0, 9).map((icon) => (
+                            <div className="grid grid-cols-4 gap-4">
+                                {PASSWORD_ICONS.map((icon) => (
                                     <button
                                         key={icon}
                                         onClick={() => handleSecretAttempt(icon)}
-                                        className="aspect-square flex items-center justify-center text-4xl bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-[var(--color-mint)] dark:hover:bg-[var(--color-mint)] hover:scale-105 transition-all shadow-sm"
+                                        className="aspect-square flex items-center justify-center text-3xl sm:text-4xl bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-[var(--color-mint)] dark:hover:bg-[var(--color-mint)] hover:scale-105 transition-all shadow-sm"
                                     >
                                         {icon}
                                     </button>
