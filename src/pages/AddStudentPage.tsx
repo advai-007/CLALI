@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../utils/supabase';
+import { SECRET_ICONS, AVATAR_EMOJIS } from '../constants/emojiConstants';
 
 const AddStudentPage: React.FC = () => {
     const navigate = useNavigate();
@@ -25,15 +26,9 @@ const AddStudentPage: React.FC = () => {
     const [modalType, setModalType] = useState<'success' | 'error'>('success');
     const [addedStudentDetails, setAddedStudentDetails] = useState<any>(null);
 
-    const avatars = [
-        '🐼', '🦄', '🐱', '🐶', '🐻', '🦊', '🦁', '🐯',
-        '🐸', '🐧', '🐨', '🦒', '🦩', '🐒', '🦥', '🦔'
-    ];
+    const avatars = AVATAR_EMOJIS;
 
-    const secretIcons = [
-        '🍕', '🚀', '⭐', '🍦', '🎨', '🎮', '🎸', '⚽',
-        '🚲', '🍔', '🎧', '🌈', '🍿', '🍩', '🧩', '🧸'
-    ];
+    const secretIcons = SECRET_ICONS;
 
     useEffect(() => {
         const fetchClasses = async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, BookOpen, Calculator, Play, Flame, Trophy, Activity, LogOut } from 'lucide-react';
@@ -10,6 +10,10 @@ import { useAuth } from '../context/AuthContext';
 const Dashboard = () => {
     const navigate = useNavigate();
     const { studentUser, studentSignOut } = useAuth();
+    // Derive display name — checks live context, then raw localStorage, then friendly fallback
+    const displayName = studentUser?.full_name
+        || (() => { try { return JSON.parse(localStorage.getItem('studentUser') || '{}')?.full_name || ''; } catch { return ''; } })()
+        || 'Explorer';
     const [debugFeatures, setDebugFeatures] = useState<ExtractedFeatures | null>(null);
 
     useEffect(() => {
@@ -96,7 +100,7 @@ const Dashboard = () => {
                             className="bg-white rounded-[2.5rem] p-8 shadow-card w-full max-w-2xl mx-auto relative z-0 flex items-center justify-between overflow-visible"
                         >
                             <div className="flex-1 pr-4">
-                                <h2 className="text-4xl md:text-5xl font-black text-slate-700 tracking-tight mb-2">Hi {studentUser?.full_name || 'Student'}!</h2>
+                                <h2 className="text-4xl md:text-5xl font-black text-slate-700 tracking-tight mb-2">Hi {displayName}!</h2>
                                 <p className="text-lg text-slate-500 font-medium">Ready to play and learn?</p>
 
                                 <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-yellow-soft rounded-full shadow-sm border border-yellow-200">
@@ -140,6 +144,18 @@ const Dashboard = () => {
                             textColor="text-amber-900"
                             iconColor="text-amber-500"
                             buttonColor="text-amber-500"
+                        />
+
+                        {/* Space Cargo Loader Card */}
+                        <ModuleCard
+                            title="Space Cargo"
+                            subtitle="Load the rocket!"
+                            icon={Calculator}
+                            bgColor="bg-indigo-50"
+                            textColor="text-indigo-900"
+                            iconColor="text-indigo-500"
+                            buttonColor="text-indigo-500"
+                            onClick={() => navigate('/modules/space-cargo')}
                         />
 
                         {/* Quick Play (Wide) */}

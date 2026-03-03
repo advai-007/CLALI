@@ -18,6 +18,7 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     // Student-specific (non-auth users)
     studentUser: StudentUser | null;
+    studentLogin: (student: StudentUser) => void;
     studentSignOut: () => void;
 }
 
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     signOut: async () => { },
     studentUser: null,
+    studentLogin: () => { },
     studentSignOut: () => { },
 });
 
@@ -89,6 +91,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut();
     };
 
+    const studentLogin = (student: StudentUser) => {
+        localStorage.setItem('studentUser', JSON.stringify(student));
+        setStudentUser(student);
+    };
+
     const studentSignOut = () => {
         localStorage.removeItem('studentUser');
         localStorage.removeItem('classCode');
@@ -101,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         signOut,
         studentUser,
+        studentLogin,
         studentSignOut,
     };
 

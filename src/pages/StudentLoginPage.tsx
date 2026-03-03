@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { School, ArrowLeft, Loader2 } from 'lucide-react';
 import { getClassByCode, getStudentsByClassId } from '../services/studentApi';
+import { SECRET_ICONS } from '../constants/emojiConstants';
 import type { ClassInfo, StudentInfo } from '../services/studentApi';
-
-const PASSWORD_ICONS = [
-    '🍕', '🚀', '⭐', '🍦', '🎨', '🎮', '🎸', '⚽',
-    '🚲', '🍔', '🎧', '🌈', '🍿', '🍩', '🧩', '🧸'
-];
+import { useAuth } from '../context/AuthContext';
 
 const StudentLoginPage = () => {
     const navigate = useNavigate();
+    const { studentLogin } = useAuth();
     const [step, setStep] = useState<'code' | 'student' | 'secret'>('code');
     const [classCode, setClassCode] = useState('');
     const [error, setError] = useState('');
@@ -74,15 +72,15 @@ const StudentLoginPage = () => {
 
     const handleSecretAttempt = (icon: string) => {
         if (selectedStudent && icon === selectedStudent.secret_icon) {
-            // Save student session to localStorage
-            localStorage.setItem('studentUser', JSON.stringify({
+            // Update auth context (which also persists to localStorage)
+            studentLogin({
                 id: selectedStudent.id,
                 full_name: selectedStudent.full_name,
                 avatar: selectedStudent.avatar,
-                class_id: classInfo?.id,
-                class_name: classInfo?.name,
-            }));
-            navigate('/dashboard');
+                class_id: classInfo?.id ?? null,
+                class_name: classInfo?.name ?? null,
+            });
+            navigate('/calibration');
         } else {
             setError('Try again!');
             setTimeout(() => setError(''), 1000);
@@ -216,8 +214,8 @@ const StudentLoginPage = () => {
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Hello, {selectedStudent.full_name}!</h2>
                             <p className="text-slate-500 dark:text-slate-400 mb-8">Tap your secret picture to login.</p>
 
-                            <div className="grid grid-cols-4 gap-4">
-                                {PASSWORD_ICONS.map((icon) => (
+                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
+                                {SECRET_ICONS.map((icon) => (
                                     <button
                                         key={icon}
                                         onClick={() => handleSecretAttempt(icon)}

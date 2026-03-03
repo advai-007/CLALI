@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import LoginPage from './pages/LoginPage';
 import StudentLoginPage from './pages/StudentLoginPage';
@@ -13,6 +13,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { TrackingProvider } from './context/TrackingContext';
 import CalibrationPage from './pages/CalibrationPage';
+import SpaceCargoLoader from './pages/SpaceCargoLoader';
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
             />
             <Route path="/reading" element={<ReadingModule />} />
             <Route path="/calibration" element={<CalibrationPage />} />
+            <Route path="/modules/space-cargo" element={<SpaceCargoLoader />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
