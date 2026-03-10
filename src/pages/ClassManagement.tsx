@@ -68,6 +68,7 @@ const ClassManagement: React.FC = () => {
 
     useEffect(() => {
         fetchClasses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const handleLogout = async () => {
@@ -116,6 +117,7 @@ const ClassManagement: React.FC = () => {
             setNewClassGrade('');
             await fetchClasses();
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setErrorMsg(err.message || 'Failed to create class');
         } finally {

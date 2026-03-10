@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fuel Mix Monitor - Play-Plastic Workshop</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#55a6f6",
+                        "primary-dark": "#3b82f6",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                        "toy-red": "#FF5C5C",
+                        "toy-yellow": "#FFD93D",
+                        "toy-green": "#4ADE80",
+                        "toy-orange": "#FDBA74",
+                        "toy-purple": "#A78BFA",
+                        "plastic-dark": "#4B5563",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem", "3xl": "3rem", "full": "9999px"},
+                    boxShadow: {
+                        'plastic-card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), inset 0 2px 0 rgba(255, 255, 255, 0.4)',
+                        'plastic-inset': 'inset 0 4px 6px rgba(0,0,0,0.15), inset 0 -2px 2px rgba(255,255,255,0.2)',
+                        'plastic-btn': '0 6px 0 rgba(0,0,0,0.15), 0 8px 10px rgba(0,0,0,0.2), inset 0 2px 0 rgba(255,255,255,0.3)',
+                        'plastic-btn-active': '0 0 0 rgba(0,0,0,0.15), inset 0 4px 8px rgba(0,0,0,0.2)',
+                        'tank-glass': 'inset 0 0 20px rgba(255,255,255,0.5), 0 4px 6px rgba(0,0,0,0.05)',
+                        'liquid-surface': '0 -4px 6px rgba(255,255,255,0.6), inset 0 4px 8px rgba(255,255,255,0.3)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Bubbling Animation */
+        @keyframes rise {
+            0% { bottom: -20px; transform: translateX(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { bottom: 100%; transform: translateX(-20px); opacity: 0; }
+        }
+        
+        @keyframes rise-alt {
+            0% { bottom: -20px; transform: translateX(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { bottom: 100%; transform: translateX(20px); opacity: 0; }
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+        }
+
+        .bubble:nth-child(1) { width: 10px; height: 10px; left: 10%; animation: rise 4s infinite ease-in; }
+        .bubble:nth-child(2) { width: 15px; height: 15px; left: 30%; animation: rise-alt 5s infinite ease-in 1s; }
+        .bubble:nth-child(3) { width: 8px; height: 8px; left: 60%; animation: rise 3s infinite ease-in 2s; }
+        .bubble:nth-child(4) { width: 12px; height: 12px; left: 80%; animation: rise-alt 6s infinite ease-in 0.5s; }
+
+        /* Pour Animation Class (Simulated for design) */
+        .pour-active {
+            transform: rotate(45deg) translateY(10px);
+        }
+
+        /* Liquid Wave Effect */
+        .liquid-surface {
+            background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.5), rgba(255,255,255,0.1));
+            background-size: 200% 100%;
+            animation: wave 3s linear infinite;
+        }
+        @keyframes wave {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 h-screen overflow-hidden selection:bg-primary selection:text-white flex flex-col">
+<!-- Top Navigation / HUD -->
+<header class="h-20 flex-none px-6 py-4 flex items-center justify-between z-10 relative">
+<!-- Back Button -->
+<button class="bg-white dark:bg-slate-800 rounded-full p-3 shadow-plastic-btn hover:translate-y-0.5 hover:shadow-none transition-all active:shadow-plastic-btn-active border-b-4 border-slate-200 dark:border-slate-900">
+<span class="material-icons-round text-plastic-dark dark:text-slate-200 text-3xl">arrow_back</span>
+</button>
+<!-- Title Pill -->
+<div class="bg-white dark:bg-slate-800 px-8 py-3 rounded-2xl shadow-plastic-card border border-slate-100 dark:border-slate-700">
+<h1 class="text-2xl font-bold text-plastic-dark dark:text-slate-200 tracking-wide">FUEL MIX MONITOR</h1>
+</div>
+<!-- Star Counter -->
+<div class="bg-white dark:bg-slate-800 px-6 py-2 rounded-2xl shadow-plastic-card flex items-center gap-3 border border-slate-100 dark:border-slate-700">
+<span class="text-3xl">⭐</span>
+<span class="text-2xl font-bold text-plastic-dark dark:text-slate-200 font-display">4/5</span>
+</div>
+</header>
+<!-- Main Game Area -->
+<main class="flex-1 relative flex flex-col items-center justify-center p-4">
+<!-- Background Decor -->
+<div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#55a6f6 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
+<!-- Game Container -->
+<div class="relative w-full max-w-5xl h-full flex flex-col items-center justify-center gap-8">
+<!-- LCD Target Display -->
+<div class="bg-slate-800 dark:bg-black p-4 rounded-2xl shadow-plastic-btn border-4 border-slate-400 dark:border-slate-700 relative z-10 transform -rotate-1 w-72 text-center">
+<div class="bg-[#2f3d30] rounded-lg p-3 shadow-inner border border-slate-600">
+<p class="text-toy-green font-mono text-lg uppercase tracking-widest opacity-80 mb-1">Target Volume</p>
+<div class="text-5xl font-mono text-toy-green font-bold tracking-tighter drop-shadow-[0_0_8px_rgba(74,222,128,0.6)]">
+                        07 <span class="text-2xl">Liters</span>
+</div>
+</div>
+<!-- Screws -->
+<div class="absolute top-2 left-2 w-3 h-3 rounded-full bg-slate-400 shadow-inner"></div>
+<div class="absolute top-2 right-2 w-3 h-3 rounded-full bg-slate-400 shadow-inner"></div>
+<div class="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-slate-400 shadow-inner"></div>
+<div class="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-slate-400 shadow-inner"></div>
+</div>
+<!-- Tank Assembly -->
+<div class="relative flex items-end justify-center w-full max-w-lg h-[400px]">
+<!-- Overflow Pipe -->
+<div class="absolute -right-16 top-16 w-24 h-32 z-0">
+<div class="w-full h-full border-[16px] border-slate-300 dark:border-slate-600 rounded-tr-3xl rounded-br-none border-l-0 border-b-0 absolute top-0 left-0"></div>
+<div class="absolute -bottom-2 -right-4 w-8 h-4 bg-slate-400 rounded-full"></div> <!-- Drip -->
+</div>
+<!-- Main Tank -->
+<div class="relative w-64 h-full bg-blue-50/30 dark:bg-blue-900/10 backdrop-blur-sm rounded-3xl border-[6px] border-white/80 dark:border-slate-500 shadow-tank-glass overflow-hidden z-10">
+<!-- Measurement Ticks -->
+<div class="absolute inset-y-0 right-0 w-16 flex flex-col justify-between py-6 pr-3 select-none pointer-events-none z-20">
+<!-- Generates 10 ticks -->
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">10</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">9</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">8</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">7</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">6</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">5</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">4</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">3</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">2</span></div>
+<div class="flex items-center justify-end gap-2 h-[8%] border-b-2 border-slate-400/30 w-full"><span class="text-xs font-bold text-slate-500">1</span></div>
+</div>
+<!-- Liquid Container -->
+<div class="absolute bottom-0 left-0 right-0 bg-primary/80 dark:bg-primary/60 transition-all duration-700 ease-in-out shadow-liquid-surface" style="height: 40%;">
+<!-- Surface Line -->
+<div class="absolute top-0 left-0 right-0 h-2 bg-white/40 liquid-surface"></div>
+<!-- Bubbles -->
+<div class="absolute inset-0 overflow-hidden">
+<div class="bubble"></div>
+<div class="bubble"></div>
+<div class="bubble"></div>
+<div class="bubble"></div>
+</div>
+</div>
+</div>
+<!-- Tank Base -->
+<div class="absolute -bottom-4 w-80 h-8 bg-slate-300 dark:bg-slate-700 rounded-full shadow-plastic-btn z-0"></div>
+</div>
+<!-- Feedback Message -->
+<div class="min-h-[3rem] flex items-center justify-center">
+<p class="text-plastic-dark dark:text-slate-300 font-bold text-lg bg-white/50 dark:bg-black/20 px-4 py-1 rounded-lg">
+                    Current Level: <span class="text-primary font-extrabold text-xl">4</span> Liters
+                 </p>
+</div>
+<!-- Control Deck -->
+<div class="w-full max-w-3xl bg-white dark:bg-slate-800 rounded-t-[3rem] p-8 pb-12 shadow-plastic-card border-t-4 border-white/20 relative z-20">
+<!-- Deck Texture -->
+<div class="absolute inset-0 opacity-5 rounded-t-[3rem] pointer-events-none" style="background-image: repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%); background-size: 10px 10px;"></div>
+<div class="flex flex-wrap justify-center items-end gap-8 md:gap-16 relative z-10">
+<!-- Green Can (1L) -->
+<div class="group relative flex flex-col items-center gap-3">
+<button class="relative w-24 h-32 bg-toy-green rounded-2xl shadow-plastic-btn active:translate-y-2 active:shadow-plastic-btn-active transition-all duration-150 group-hover:-translate-y-1">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black/20 rounded-full border-4 border-toy-green"></div> <!-- Cap -->
+<div class="absolute top-4 right-[-10px] w-4 h-16 bg-toy-green rounded-r-lg border-l border-black/10"></div> <!-- Handle -->
+<div class="absolute inset-2 border-2 border-white/20 rounded-xl flex items-center justify-center">
+<span class="font-display font-black text-white text-3xl drop-shadow-md">+1</span>
+</div>
+<div class="absolute bottom-2 left-2 right-2 h-1 bg-black/10 rounded-full"></div> <!-- Rib -->
+</button>
+<span class="text-sm font-bold text-slate-500 uppercase tracking-wider">Small</span>
+</div>
+<!-- Orange Can (2L) -->
+<div class="group relative flex flex-col items-center gap-3">
+<button class="relative w-28 h-36 bg-orange-400 rounded-2xl shadow-plastic-btn active:translate-y-2 active:shadow-plastic-btn-active transition-all duration-150 group-hover:-translate-y-1">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-black/20 rounded-full border-4 border-orange-400"></div>
+<div class="absolute top-5 right-[-12px] w-5 h-20 bg-orange-400 rounded-r-lg border-l border-black/10"></div>
+<div class="absolute inset-2 border-2 border-white/20 rounded-xl flex items-center justify-center">
+<span class="font-display font-black text-white text-4xl drop-shadow-md">+2</span>
+</div>
+<div class="absolute bottom-3 left-3 right-3 h-1 bg-black/10 rounded-full"></div>
+<div class="absolute bottom-6 left-3 right-3 h-1 bg-black/10 rounded-full"></div>
+</button>
+<span class="text-sm font-bold text-slate-500 uppercase tracking-wider">Medium</span>
+</div>
+<!-- Purple Can (3L) -->
+<div class="group relative flex flex-col items-center gap-3">
+<button class="relative w-32 h-40 bg-toy-purple rounded-2xl shadow-plastic-btn active:translate-y-2 active:shadow-plastic-btn-active transition-all duration-150 group-hover:-translate-y-1">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-black/20 rounded-full border-4 border-toy-purple"></div>
+<div class="absolute top-6 right-[-14px] w-6 h-24 bg-toy-purple rounded-r-lg border-l border-black/10"></div>
+<div class="absolute inset-2 border-2 border-white/20 rounded-xl flex items-center justify-center">
+<span class="font-display font-black text-white text-5xl drop-shadow-md">+3</span>
+</div>
+<div class="absolute bottom-4 left-4 right-4 h-1 bg-black/10 rounded-full"></div>
+<div class="absolute bottom-8 left-4 right-4 h-1 bg-black/10 rounded-full"></div>
+<div class="absolute bottom-12 left-4 right-4 h-1 bg-black/10 rounded-full"></div>
+</button>
+<span class="text-sm font-bold text-slate-500 uppercase tracking-wider">Large</span>
+</div>
+<!-- Reset Lever Area -->
+<div class="ml-4 md:ml-12 border-l-2 border-slate-100 dark:border-slate-700 pl-8 flex flex-col items-center gap-2">
+<div class="relative w-16 h-16">
+<button class="w-full h-full rounded-full bg-toy-red shadow-plastic-btn active:shadow-plastic-btn-active active:scale-95 transition-all flex items-center justify-center group">
+<span class="material-icons-round text-white text-3xl group-hover:rotate-180 transition-transform duration-500">refresh</span>
+</button>
+</div>
+<span class="text-xs font-bold text-toy-red uppercase tracking-widest mt-2">Drain</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Image for decorative purposes hidden from view but semantically present -->
+<img aria-hidden="true" class="hidden" data-alt="Abstract soft plastic pattern background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ8z9iF_9_SkbBR09SDxs1RtjH6MVquNIglbvzQrEMb4mKmoCAKMa5U6bC4jIg18s4wF1QMSeotvymbWTO0qKZqIo0d6G3pVt1rUXjtITTOUhc10ARUT8Ebhtas8A1mJsb2Ue16nrU1dIHZ69fI98nmMaeSUz4KmpsLEu1bKqL296keLsU5GU0eqxfnw3dsl45EQx43zyfyyJP-lR7xXXlVz4hkz_2fOWSIRMVQO8wBX02-8p1YxbtvTeYV_QQuV2M7IZ6OOwfzJ9P"/>
+</body></html>

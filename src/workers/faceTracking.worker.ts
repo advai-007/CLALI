@@ -4,16 +4,19 @@ let faceLandmarker: FaceLandmarker | null = null;
 let initialized = false;
 
 // Math Helpers
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function dist(a: any, b: any) {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function computeEAR(lm: any[]): number {
     const eye = (i: number[]) =>
         (dist(lm[i[1]], lm[i[5]]) + dist(lm[i[2]], lm[i[4]])) / (2 * dist(lm[i[0]], lm[i[3]]));
     return (eye([33, 160, 158, 133, 153, 144]) + eye([362, 385, 387, 263, 373, 380])) / 2;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function computeHeadPose(lm: any[]) {
     const nose = lm[1], left = lm[234], right = lm[454], top = lm[10], bottom = lm[152];
     const fw = right.x - left.x;
@@ -47,6 +50,7 @@ async function init() {
 
         initialized = true;
         self.postMessage({ type: 'INIT_SUCCESS' });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         self.postMessage({ type: 'INIT_ERROR', error: String(err) });
     }

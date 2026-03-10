@@ -32,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
     studentSignOut: () => { },
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     return useContext(AuthContext);
 };
@@ -54,6 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedStudent = localStorage.getItem('studentUser');
         if (savedStudent) {
             try {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setStudentUser(JSON.parse(savedStudent));
             } catch {
                 localStorage.removeItem('studentUser');

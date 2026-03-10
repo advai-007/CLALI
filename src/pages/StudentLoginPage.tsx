@@ -13,7 +13,7 @@ const StudentLoginPage = () => {
     const [step, setStep] = useState<'code' | 'student' | 'secret'>('code');
     const [classCode, setClassCode] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(() => !!localStorage.getItem('classCode'));
 
     // Data from Supabase
     const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
@@ -24,7 +24,6 @@ const StudentLoginPage = () => {
     useEffect(() => {
         const savedCode = localStorage.getItem('classCode');
         if (savedCode) {
-            setLoading(true);
             getClassByCode(savedCode).then(async (cls) => {
                 if (cls) {
                     setClassInfo(cls);

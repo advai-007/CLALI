@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+ 
 // ─── Classic Worker (non-module) for MediaPipe Face Tracking ─────────────────
 // This worker intentionally lives in public/ so Vite does NOT transform it.
 // Vite's dev server rewrites dynamic import() to self.import() in module workers,

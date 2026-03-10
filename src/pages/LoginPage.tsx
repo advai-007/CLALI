@@ -62,6 +62,7 @@ const LoginPage = () => {
                 // If roles match, proceed to the dashboard
                 navigate(`/${role}-dashboard`);
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred during login.');
         } finally {

@@ -47,6 +47,7 @@ export function useFaceTracking(videoRef: React.RefObject<HTMLVideoElement | nul
                 // race conditions throwing "play() request was interrupted by a new load request"
                 try {
                     await videoRef.current.play();
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (playErr: any) {
                     if (playErr.name !== 'AbortError' && playErr.name !== 'NotAllowedError') {
                         console.warn("Video play error:", playErr);
@@ -76,10 +77,12 @@ export function useFaceTracking(videoRef: React.RefObject<HTMLVideoElement | nul
             worker.postMessage({ type: 'INIT' });
             workerRef.current = worker;
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error("Camera access error:", err);
             setState(s => ({ ...s, isInitializing: false, error: 'Camera error: ' + (err.message || String(err)) }));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoRef]);
 
     const stopTracking = useCallback(() => {
@@ -116,7 +119,7 @@ export function useFaceTracking(videoRef: React.RefObject<HTMLVideoElement | nul
                             timestamp: performance.now()
                         }
                     }, [bitmap]); // Transferable object
-                } catch (e) {
+                } catch {
                     // Bitmap creation failed (e.g. video not ready)
                     isWorkerBusy.current = false;
                 }

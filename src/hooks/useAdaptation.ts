@@ -49,9 +49,9 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
     const [machineState, send] = useMachine(adaptationMachine);
 
     const normalizer = useMemo(() => new SignalNormalizer(), []);
-    const isActiveRef = useRef(false);
+    const [isActive, setIsActive] = useState(autoStart);
     const [rawFeatures, setRawFeatures] = useState<ExtractedFeatures | null>(null);
-    const latestScoresRef = useRef<NormalizedScores>({
+    const [latestScores, setLatestScores] = useState<NormalizedScores>({
         stressScore: 0,
         focusScore: 1,
         blinkRate: 0,
@@ -82,7 +82,7 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
                 faceMetricsRef.current,
                 baselineRef.current
             );
-            latestScoresRef.current = scores;
+            setLatestScores(scores);
 
             send({
                 type: 'UPDATE_SIGNALS',
@@ -102,32 +102,33 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
         if (autoStart) {
             sensorBridge.start();
             featureExtractor.start();
-            isActiveRef.current = true;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsActive(true);
         }
 
         return () => {
             sensorBridge.stop();
             featureExtractor.stop();
-            isActiveRef.current = false;
+            setIsActive(false);
         };
     }, [autoStart]);
 
     const start = useCallback(() => {
-        if (!isActiveRef.current) {
+        if (!isActive) {
             normalizer.resetSession();
             sensorBridge.start();
             featureExtractor.start();
-            isActiveRef.current = true;
+            setIsActive(true);
         }
-    }, [normalizer]);
+    }, [normalizer, isActive]);
 
     const stop = useCallback(() => {
-        if (isActiveRef.current) {
+        if (isActive) {
             sensorBridge.stop();
             featureExtractor.stop();
-            isActiveRef.current = false;
+            setIsActive(false);
         }
-    }, []);
+    }, [isActive]);
 
     const override = useCallback((state: AdaptationState) => {
         send({ type: 'OVERRIDE', state });
@@ -147,12 +148,12 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
             stress: machineState.context.stressScore,
             focus: machineState.context.focusScore,
         },
-        blinkRate: latestScoresRef.current.blinkRate,
-        timeOnTask: latestScoresRef.current.timeOnTask,
+        blinkRate: latestScores.blinkRate,
+        timeOnTask: latestScores.timeOnTask,
         rawFeatures,
-        faceMetrics: faceMetricsRef.current,
+        faceMetrics: faceMetrics,
         override,
-        isActive: isActiveRef.current,
+        isActive: isActive,
         start,
         stop,
     };

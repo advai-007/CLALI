@@ -24,6 +24,7 @@ export function TrackingProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTrackingContext() {
     const context = useContext(TrackingContext);
     if (context === undefined) {

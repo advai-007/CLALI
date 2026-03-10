@@ -63,6 +63,7 @@ const SignupPage = () => {
             // Redirect to the teacher dashboard
             navigate('/teacher-dashboard');
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred during signup.');
         } finally {

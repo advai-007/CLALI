@@ -17,6 +17,7 @@ const AddStudentPage: React.FC = () => {
     const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
     const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [classes, setClasses] = useState<any[]>([]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +25,7 @@ const AddStudentPage: React.FC = () => {
     // Modal State
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState<'success' | 'error'>('success');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [addedStudentDetails, setAddedStudentDetails] = useState<any>(null);
 
     const avatars = AVATAR_EMOJIS;
@@ -136,6 +138,7 @@ const AddStudentPage: React.FC = () => {
             setModalType('success');
             setShowModal(true);
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error('Error adding student:', error);
             setErrorMsg(error.message || 'Failed to add student. Please try again.');

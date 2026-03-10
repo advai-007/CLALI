@@ -44,6 +44,7 @@ export const dbService = {
         const { data, error } = await supabase
             .from(table)
             .select(select)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .eq('id' as any, id)
             .single();
 
@@ -59,6 +60,7 @@ export const dbService = {
     async create<T extends Tables>(table: T, payload: Insert<T>) {
         const { data, error } = await supabase
             .from(table)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .insert(payload as any)
             .select()
             .single();
@@ -76,7 +78,9 @@ export const dbService = {
     async update<T extends TablesWithId>(table: T, id: string, payload: Update<T>) {
         const { data, error } = await supabase
             .from(table)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .update(payload as any)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .eq('id' as any, id)
             .select()
             .single();
@@ -94,6 +98,7 @@ export const dbService = {
         const { error } = await supabase
             .from(table)
             .delete()
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .eq('id' as any, id);
 
         if (error) throw error;

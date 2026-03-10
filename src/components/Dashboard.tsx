@@ -80,13 +80,7 @@ const Dashboard = () => {
                                 <LogOut size={20} />
                             </motion.button>
                         )}
-                        <motion.button
-                            whileHover={{ scale: 1.1, rotate: 90 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-primary hover:bg-slate-50 shadow-sm transition-colors cursor-pointer"
-                        >
-                            <Settings size={24} />
-                        </motion.button>
+
                     </div>
                 </header>
 
@@ -123,41 +117,6 @@ const Dashboard = () => {
                     {/* Module Grid */}
                     <section className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
 
-                        {/* Reading Card */}
-                        <ModuleCard
-                            title="Reading Time"
-                            subtitle="Let's explore stories!"
-                            icon={BookOpen}
-                            bgColor="bg-mint-soft"
-                            textColor="text-teal-900"
-                            iconColor="text-emerald-500"
-                            buttonColor="text-emerald-500"
-                            onClick={() => navigate('/reading')}
-                        />
-
-                        {/* Math Card */}
-                        <ModuleCard
-                            title="Math Fun"
-                            subtitle="Solve challenges!"
-                            icon={Calculator}
-                            bgColor="bg-yellow-soft"
-                            textColor="text-amber-900"
-                            iconColor="text-amber-500"
-                            buttonColor="text-amber-500"
-                        />
-
-                        {/* Space Cargo Loader Card */}
-                        <ModuleCard
-                            title="Space Cargo"
-                            subtitle="Load the rocket!"
-                            icon={Calculator}
-                            bgColor="bg-indigo-50"
-                            textColor="text-indigo-900"
-                            iconColor="text-indigo-500"
-                            buttonColor="text-indigo-500"
-                            onClick={() => navigate('/modules/space-cargo')}
-                        />
-
                         {/* Quick Play (Wide) */}
                         <motion.button
                             whileHover={{ scale: 1.02, y: -5 }}
@@ -177,6 +136,82 @@ const Dashboard = () => {
 
                             <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md group-hover:bg-blue-100 transition-colors">
                                 <Play className="text-blue-500 ml-1" size={24} fill="currentColor" />
+                            </div>
+                        </motion.button>
+
+                        {/* Workshop Game */}
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => navigate('/workshop')}
+                            className="col-span-1 md:col-span-1 group relative w-full h-48 rounded-[2rem] overflow-hidden shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            style={{ background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 50%, #4338CA 100%)' }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent pointer-events-none" />
+                            {/* Floating gear decorations */}
+                            <div className="absolute top-4 right-24 opacity-10 pointer-events-none">
+                                <span className="material-symbols-outlined text-white text-7xl" style={{ fontVariationSettings: "'FILL' 1" }}>settings</span>
+                            </div>
+                            <div className="absolute bottom-2 right-48 opacity-10 pointer-events-none rotate-45">
+                                <span className="material-symbols-outlined text-white text-5xl" style={{ fontVariationSettings: "'FILL' 1" }}>build</span>
+                            </div>
+
+                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-3 py-0.5 bg-white/20 rounded-full text-[11px] font-bold text-white uppercase tracking-wider">New</span>
+                                </div>
+                                <h3 className="text-3xl font-black text-white leading-tight mb-2">Mechanic Workshop</h3>
+                                <p className="text-base font-bold text-white/60">Fix gears, balance tires & more!</p>
+                            </div>
+
+                            <div className="relative z-10 flex items-center justify-center h-full pr-4">
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)' }}>
+                                    <span className="material-symbols-outlined text-white text-5xl md:text-6xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>
+                                        engineering
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                                <Play className="text-white ml-1" size={24} fill="currentColor" />
+                            </div>
+                        </motion.button>
+
+                        {/* Word Factory Game */}
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => navigate('/word-factory')}
+                            className="col-span-1 md:col-span-1 group relative w-full h-48 rounded-[2rem] overflow-hidden shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #B45309 100%)' }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent pointer-events-none" />
+                            {/* Floating letter decorations */}
+                            <div className="absolute top-4 right-24 opacity-15 pointer-events-none rotate-12">
+                                <span className="font-black text-white text-7xl tracking-tighter">A</span>
+                            </div>
+                            <div className="absolute bottom-2 right-48 opacity-15 pointer-events-none -rotate-12">
+                                <span className="font-black text-white text-6xl tracking-tighter">B</span>
+                            </div>
+
+                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-3 py-0.5 bg-white/20 rounded-full text-[11px] font-bold text-white uppercase tracking-wider">New Game</span>
+                                </div>
+                                <h3 className="text-3xl font-black text-white leading-tight mb-2">Word Factory</h3>
+                                <p className="text-base font-bold text-white/60">Drag & drop letters to spell!</p>
+                            </div>
+
+                            <div className="relative z-10 flex items-center justify-center h-full pr-4">
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)' }}>
+                                    <span className="material-symbols-outlined text-white text-5xl md:text-6xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>
+                                        sort_by_alpha
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                                <Play className="text-white ml-1" size={24} fill="currentColor" />
                             </div>
                         </motion.button>
                     </section>
@@ -231,42 +266,6 @@ const Dashboard = () => {
 };
 
 // Sub-components for cleaner file
-
-interface ModuleCardProps {
-    title: string;
-    subtitle: string;
-    icon: ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
-    bgColor: string;
-    textColor: string;
-    iconColor: string;
-    buttonColor: string;
-    onClick?: () => void;
-}
-
-const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, textColor, iconColor, buttonColor, onClick }: ModuleCardProps) => (
-    <motion.button
-        onClick={onClick}
-        whileHover={{ scale: 1.02, y: -5 }}
-        whileTap={{ scale: 0.98 }}
-        className={`group relative w-full h-64 rounded-[2rem] overflow-hidden ${bgColor} shadow-card hover:shadow-float flex flex-col justify-between p-6 cursor-pointer border-4 border-transparent hover:border-white/50 transition-all`}
-    >
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent pointer-events-none" />
-
-        <div className="relative z-10 flex justify-center items-center h-2/3">
-            <Icon size={120} className={`${iconColor} drop-shadow-md opacity-80 group-hover:scale-110 transition-transform duration-300`} strokeWidth={1.5} />
-        </div>
-
-        <div className="relative z-10 flex items-end justify-between w-full mt-2">
-            <div className="text-left">
-                <h3 className={`text-2xl font-black ${textColor} leading-tight`}>{title}</h3>
-                <p className={`text-sm font-bold ${textColor} opacity-70 mt-1`}>{subtitle}</p>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md group-hover:bg-white/80 transition-colors shadow-pop group-hover:shadow-none group-hover:translate-y-[2px]">
-                <Play className={`${buttonColor} ml-1`} size={24} fill="currentColor" />
-            </div>
-        </div>
-    </motion.button>
-);
 
 interface StatItemProps {
     icon: ComponentType<{ size?: number; className?: string }>;

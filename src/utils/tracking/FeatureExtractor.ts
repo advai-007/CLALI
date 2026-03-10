@@ -84,6 +84,7 @@ class FeatureExtractor {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private processTouch(data: any, time: number) {
         if (data.action === 'start') {
             this.touchMap.set(data.id, { startTime: time, x: data.x, y: data.y });

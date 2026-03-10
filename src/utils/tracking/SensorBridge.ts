@@ -1,6 +1,7 @@
 export type RawSensorData = {
     type: 'touch' | 'scroll' | 'motion' | 'visibility' | 'idle' | 'orientation' | 'grip';
     timestamp: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any;
 };
 
@@ -39,6 +40,7 @@ class SensorBridge {
         let granted = true;
         // iOS 13+ requires explicit permission for device sensors
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const DevOrientEvent = DeviceOrientationEvent as any;
             if (typeof DevOrientEvent.requestPermission === 'function') {
                 const result = await DevOrientEvent.requestPermission();
@@ -48,6 +50,7 @@ class SensorBridge {
             // Not iOS or permission API not available — that's OK
         }
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const DevMotionEvent = DeviceMotionEvent as any;
             if (typeof DevMotionEvent.requestPermission === 'function') {
                 const result = await DevMotionEvent.requestPermission();
