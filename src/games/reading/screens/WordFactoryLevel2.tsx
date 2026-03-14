@@ -5,10 +5,10 @@ import WordFactoryHUD from '../components/WordFactoryHUD';
 import ConveyorBelt from '../components/ConveyorBelt';
 import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
-import HintOverlay from '../../workshop/components/HintOverlay';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
-import { AdaptiveState, POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
+import { POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
+import { CharacterGuide } from '../../../components/shared/CharacterGuide';
 import '../../workshop/workshop.css';
 
 // ─── Level 2 Data (Blends & Digraphs) ──────────────────────────────
@@ -17,11 +17,28 @@ const LEVEL_TASKS = [
     { id: 'frog', word: 'FROG', missingChunk: 'FR', missingIndices: [0, 1], distractors: ['FL', 'TR', 'CR', 'BR'] },
     { id: 'cash', word: 'CASH', missingChunk: 'SH', missingIndices: [2, 3], distractors: ['CH', 'TH', 'CK', 'NG'] },
     { id: 'play', word: 'PLAY', missingChunk: 'PL', missingIndices: [0, 1], distractors: ['PR', 'SL', 'FL', 'CL'] },
+    { id: 'chin', word: 'CHIN', missingChunk: 'CH', missingIndices: [0, 1], distractors: ['SH', 'WH', 'TH', 'PH'] },
+    { id: 'clap', word: 'CLAP', missingChunk: 'CL', missingIndices: [0, 1], distractors: ['FL', 'SL', 'PL', 'GL'] },
+    { id: 'swim', word: 'SWIM', missingChunk: 'SW', missingIndices: [0, 1], distractors: ['SN', 'SL', 'SC', 'SP'] },
+    { id: 'grip', word: 'GRIP', missingChunk: 'GR', missingIndices: [0, 1], distractors: ['CR', 'DR', 'PR', 'FR'] },
+    { id: 'that', word: 'THAT', missingChunk: 'TH', missingIndices: [0, 1], distractors: ['CH', 'WH', 'SH', 'PH'] },
+    { id: 'slip', word: 'SLIP', missingChunk: 'SL', missingIndices: [0, 1], distractors: ['FL', 'CL', 'PL', 'GL'] },
+    { id: 'wrap', word: 'WRAP', missingChunk: 'WR', missingIndices: [0, 1], distractors: ['TR', 'DR', 'GR', 'PR'] },
+    { id: 'drop', word: 'DROP', missingChunk: 'DR', missingIndices: [0, 1], distractors: ['TR', 'GR', 'FR', 'CR'] },
 ];
 
 export default function WordFactoryLevel2() {
     const navigate = useNavigate();
-    const { adaptiveState, sendAdaptive, addStars, setCurrentLevel } = useReading();
+    const {
+        assistLevel,
+        trackClick,
+        trackError,
+        trackMouseMove,
+        resetAdaptation,
+        sendAdaptive,
+        addStars,
+        setCurrentLevel
+    } = useReading();
     const monitor = useReadingMonitor();
 
     const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
@@ -36,29 +53,51 @@ export default function WordFactoryLevel2() {
 
     const dropZoneRef = useRef<HTMLDivElement>(null);
 
-    // Filter conveyor items based on adaptive state
+    // Reset adaptation metrics when task changes
+    useEffect(() => {
+        resetAdaptation(`level2-${currentTaskIdx}`);
+    }, [currentTaskIdx]);
+
+    // Track mouse movement for jitter detection
+    useEffect(() => {
+        window.addEventListener('mousemove', trackMouseMove);
+        return () => window.removeEventListener('mousemove', trackMouseMove);
+    }, [trackMouseMove]);
+
+    // 4-stage assist flags
+    const isReduced = assistLevel >= 2;
+    const isGlowing = assistLevel >= 3;
+    const isReveal = assistLevel >= 4;
+
+    // Filter conveyor items based on assist stage
     const beltItems = useMemo(() => {
         const correctChunk = task.missingChunk;
         let choices = [correctChunk, ...task.distractors];
 
-        if (adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST) {
+        if (isReveal) {
             choices = [correctChunk];
-        } else if (adaptiveState === AdaptiveState.REDUCED_COMPLEXITY) {
-            // eslint-disable-next-line react-hooks/purity
-            const dist = task.distractors[Math.floor(Math.random() * task.distractors.length)];
+        } else if (isReduced) {
+            const distractors = task.distractors.filter(d => d !== correctChunk);
+            const dist = distractors[Math.floor(Math.random() * distractors.length)];
             choices = [correctChunk, dist];
         }
 
         return choices.sort().map(chunk => {
             const isCorrect = chunk === correctChunk;
-            const shouldHighlight = isCorrect && (adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST);
+            let bgColor = '#FCA5A5'; // Default red
+
+            if (isCorrect && isReveal) {
+                bgColor = '#A78BFA'; // Stage 4: bright purple reveal
+            }
+            // Stage 3: glow applied via CSS ring
+
             return {
                 id: chunk,
                 label: chunk,
-                color: shouldHighlight ? '#A78BFA' : '#FCA5A5' // Adaptive hint colors
+                color: bgColor
             };
         });
-    }, [task, adaptiveState]);
+    }, [task, assistLevel]);
 
     useEffect(() => {
         setCurrentLevel(2);
@@ -76,7 +115,8 @@ export default function WordFactoryLevel2() {
     const handleDragStart = useCallback((id: string, _e: any) => {
         setDraggedChunk(id);
         monitor.recordInteraction();
-    }, [monitor]);
+        trackClick();
+    }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,19 +152,19 @@ export default function WordFactoryLevel2() {
                 } else {
                     monitor.recordIncorrectAction();
                     sendAdaptive({ type: 'INCORRECT_ACTION' });
-
+                    trackError();
                     showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
                 }
             } else {
                 monitor.recordIncorrectAction();
             }
         },
-        [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, addStars]
+        [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, addStars, trackError]
     );
 
     const maxAssistControls = useAnimation();
     useEffect(() => {
-        if (adaptiveState === AdaptiveState.MAX_ASSIST) {
+        if (isReveal) {
             maxAssistControls.start({
                 y: [0, -25, 0],
                 rotateZ: [0, 8, -8, 0],
@@ -133,10 +173,10 @@ export default function WordFactoryLevel2() {
         } else {
             maxAssistControls.stop();
         }
-    }, [adaptiveState, maxAssistControls]);
+    }, [isReveal, maxAssistControls]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans">
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
             <WordFactoryHUD title="Blends & Digraphs" icon="merge_type" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full h-full flex flex-col items-center justify-center min-h-screen relative z-10">
@@ -149,12 +189,6 @@ export default function WordFactoryLevel2() {
 
                     {/* Word Display Area */}
                     <div className="flex gap-4 items-center justify-center">
-                        {/* 
-                            Instead of mapping every char, we group them. 
-                            If index is missingIndices[0], we render the double-slot.
-                            Otherwise we render the normal char.
-                            Since missing chunks are always length 2 and contiguous, we can slice around it.
-                        */}
                         {task.word.split('').map((char, index) => {
                             const isMissing = task.missingIndices.includes(index);
                             const isFirstMissing = index === task.missingIndices[0];
@@ -167,9 +201,13 @@ export default function WordFactoryLevel2() {
                                     <div
                                         key={`slot-chunk`}
                                         ref={dropZoneRef}
-                                        className={`w-40 h-32 rounded-3xl border-4 bg-slate-800/80 flex items-center justify-center relative transition-colors duration-300 ${(adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST) && !placedChunk
+                                        className={`w-40 h-32 rounded-3xl border-4 bg-slate-800/80 flex items-center justify-center relative transition-colors duration-300 ${isReveal && !placedChunk
                                             ? 'border-indigo-400 bg-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.6)]'
-                                            : 'border-slate-500/50 border-dashed'
+                                            : isGlowing && !placedChunk
+                                                ? 'border-indigo-300 bg-indigo-300/10 shadow-[0_0_25px_rgba(165,180,252,0.4)]'
+                                                : isReduced && !placedChunk
+                                                    ? 'border-indigo-300/50 bg-indigo-400/10'
+                                                    : 'border-slate-500/50 border-dashed'
                                             }`}
                                     >
                                         {placedChunk && (
@@ -200,7 +238,7 @@ export default function WordFactoryLevel2() {
                         {beltItems.map((item) => {
                             if (placedChunk === item.id) return null;
                             const isCorrect = item.id === task.missingChunk;
-                            const shouldAssist = isCorrect && adaptiveState === AdaptiveState.MAX_ASSIST;
+                            const shouldAssist = isCorrect && isReveal;
 
                             return (
                                 <motion.div
@@ -235,22 +273,19 @@ export default function WordFactoryLevel2() {
                 </div>
             </main>
 
+            {/* Character Guide at the bottom */}
+            <div className="fixed bottom-4 left-4 z-40">
+                <CharacterGuide assistLevel={assistLevel} />
+            </div>
+
             <FeedbackToast message={feedbackMsg} type={feedbackType} triggerId={feedbackId} />
-
-            {adaptiveState === AdaptiveState.GUIDED && !placedChunk && (
-                <HintOverlay adaptiveState={adaptiveState} hintText="Look for the purple glowing box. Which chunk fits best?" />
-            )}
-
-            {adaptiveState === AdaptiveState.MAX_ASSIST && !placedChunk && (
-                <HintOverlay adaptiveState={adaptiveState} hintText="The bouncing chunk matches the missing sounds!" />
-            )}
 
             {showVictory && (
                 <VictoryModal
                     title="Blends Master!"
                     isOpen={true} starsEarned={1}
                     onNext={() => {
-                        navigate('/reading/level3');
+                        navigate('/word-factory/level3');
                     }}
                     onClose={() => navigate('/dashboard')}
                 />

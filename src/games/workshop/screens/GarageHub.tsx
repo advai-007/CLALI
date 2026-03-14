@@ -17,7 +17,6 @@ interface StationCard {
 }
 
 const STATION_CARDS: StationCard[] = [
-    { id: 'gearbox', label: 'Gearbox', icon: 'settings', color: '#FF5C5C', accent: '#DC2626', glow: 'rgba(255,92,92,0.35)', desc: 'Sort the gears!' },
     { id: 'tires', label: 'Tires', icon: 'tire_repair', color: '#4DA6FF', accent: '#2563EB', glow: 'rgba(77,166,255,0.35)', desc: 'Balance the wheel!' },
     { id: 'bolts', label: 'Bolts', icon: 'build', color: '#A78BFA', accent: '#7C3AED', glow: 'rgba(167,139,250,0.35)', desc: 'Tighten in order!' },
     { id: 'wiring', label: 'Wiring', icon: 'cable', color: '#4ADE80', accent: '#16A34A', glow: 'rgba(74,222,128,0.35)', desc: 'Connect the wires!' },
@@ -34,7 +33,7 @@ export default function GarageHub() {
     const isLocked = (id: string) => getStation(id)?.status === StationStatus.LOCKED;
     const completedCount = stations.filter((s) => s.status === StationStatus.COMPLETED).length;
 
-    const allFixed = completedCount >= 5;
+    const allFixed = completedCount >= 4;
     const carColor = allFixed ? '#4ADE80' : '#6366F1';
     const carAccent = allFixed ? '#16a34a' : '#4338CA';
 
@@ -147,14 +146,14 @@ export default function GarageHub() {
                             {allFixed ? 'verified' : 'directions_car'}
                         </span>
                         <span className={`workshop-heading text-[10px] md:text-sm font-bold uppercase tracking-wider ${allFixed ? 'text-white' : 'text-[var(--ws-dark)]'}`}>
-                            {allFixed ? '🎉 Car Ready!' : `${completedCount}/5 repaired`}
+                            {allFixed ? '🎉 Car Ready!' : `${completedCount}/4 repaired`}
                         </span>
                     </motion.div>
                 </motion.div>
 
                 {/* ── Station Grid (fixed at bottom, no grow) ── */}
                 <div className="w-full max-w-[780px] flex-shrink-0 mt-auto pt-2 md:pt-4">
-                    <div className="grid grid-cols-5 gap-2 md:gap-3 w-full">
+                    <div className="grid grid-cols-4 gap-2 md:gap-3 w-full">
                         {STATION_CARDS.map((card, idx) => {
                             const station = getStation(card.id);
                             const completed = isCompleted(card.id);

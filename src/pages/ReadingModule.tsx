@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdaptation } from '../hooks/useAdaptation';
 import { useFaceTracking } from '../hooks/useFaceTracking';
 import { useTrackingContext } from '../context/TrackingContext';
+import { useAuth } from '../context/AuthContext';
 import { SensorDebugPanel } from '../components/adaptive/SensorDebugPanel';
 
 const storyParagraphs = [
@@ -52,9 +53,11 @@ const ReadingModule = () => {
     }, [baseline]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Pass face metrics + baseline into the adaptation system
+    const { studentUser } = useAuth();
     const adaptation = useAdaptation({
         faceMetrics: faceTracking.metrics,
         baseline,
+        studentId: studentUser?.id
     });
     const { adaptations, state, scores, blinkRate, timeOnTask, rawFeatures, faceMetrics, override } = adaptation;
     const [currentParagraph, setCurrentParagraph] = useState(0);

@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, BookOpen, Calculator, Play, Flame, Trophy, Activity, LogOut } from 'lucide-react';
+import { BookOpen, Calculator, Play, Flame, Activity, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { sensorBridge } from '../utils/tracking/SensorBridge';
 import { featureExtractor, type ExtractedFeatures } from '../utils/tracking/FeatureExtractor';
@@ -37,8 +37,8 @@ const Dashboard = () => {
         };
     }, []);
     return (
-        <div className="min-h-screen text-text-dark font-lexend transition-colors duration-300 overflow-x-hidden">
-            <div className="max-w-4xl mx-auto px-6 py-8 min-h-screen flex flex-col relative">
+        <div className="text-text-dark font-lexend transition-colors duration-300">
+            <div className="max-w-4xl mx-auto px-6 py-8 relative">
 
                 {/* Background Blobs */}
                 <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none" />
@@ -115,29 +115,47 @@ const Dashboard = () => {
                     </section>
 
                     {/* Module Grid */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
-
-                        {/* Quick Play (Wide) */}
+                    {/* MAIN PROJECT DEMO */}
+                    <div className="grid grid-cols-1 mb-8 w-full max-w-4xl mx-auto">
                         <motion.button
                             whileHover={{ scale: 1.02, y: -5 }}
                             whileTap={{ scale: 0.98 }}
-                            className="col-span-1 md:col-span-2 group relative w-full h-48 rounded-[2rem] overflow-hidden bg-sky-soft shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            onClick={() => navigate('/story-demo')}
+                            className="group relative w-full h-48 rounded-[2rem] overflow-hidden shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)' }}
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/30 to-transparent pointer-events-none" />
-
-                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[50%]">
-                                <h3 className="text-3xl font-black text-blue-900 leading-tight mb-2">Quick Play</h3>
-                                <p className="text-lg font-bold text-blue-800/60">5-minute brain challenge!</p>
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent pointer-events-none" />
+                            {/* Floating decorative UI elements */}
+                            <div className="absolute top-4 right-24 opacity-15 pointer-events-none rotate-12">
+                                <span className="font-lexend text-white text-7xl font-bold tracking-tighter">📖</span>
+                            </div>
+                            <div className="absolute bottom-2 right-48 flex opacity-15 pointer-events-none -rotate-12">
+                                <span className="font-lexend text-white text-6xl font-bold tracking-tighter">🦉</span>
                             </div>
 
-                            <div className="relative z-10 flex items-center justify-center h-full pr-8">
-                                <Trophy size={100} className="text-blue-500 drop-shadow-xl opacity-80" strokeWidth={1.5} />
+                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-3 py-0.5 bg-white/20 rounded-full text-[11px] font-bold text-white uppercase tracking-wider">★ Main Project Demo ★</span>
+                                </div>
+                                <h3 className="text-4xl font-black text-white leading-tight mb-2 drop-shadow-sm font-lexend">The Broken Storybook</h3>
+                                <p className="text-lg font-bold text-white/80">Adaptive Story Experience</p>
                             </div>
 
-                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md group-hover:bg-blue-100 transition-colors">
-                                <Play className="text-blue-500 ml-1" size={24} fill="currentColor" />
+                            <div className="relative z-10 flex items-center justify-center h-full pr-4">
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)' }}>
+                                    <span className="material-symbols-outlined text-white text-5xl md:text-6xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>
+                                        auto_stories
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                                <Play className="text-white ml-1" size={24} fill="currentColor" />
                             </div>
                         </motion.button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
 
                         {/* Workshop Game */}
                         <motion.button
@@ -214,7 +232,7 @@ const Dashboard = () => {
                                 <Play className="text-white ml-1" size={24} fill="currentColor" />
                             </div>
                         </motion.button>
-                    </section>
+                    </div>
 
                     {/* Stats Row - Glassmorphic Cards */}
                     <section className="mt-4 w-full max-w-2xl mx-auto">

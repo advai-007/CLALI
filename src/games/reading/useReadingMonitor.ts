@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import type { InteractionSignals } from '../workshop/workshopTypes';
 
 export function useReadingMonitor() {
@@ -61,7 +61,7 @@ export function useReadingMonitor() {
 
     const getSignals = useCallback(() => ({ ...signals.current }), []);
 
-    return {
+    return useMemo(() => ({
         startTrackingTask,
         stopTracking,
         recordInteraction,
@@ -69,5 +69,5 @@ export function useReadingMonitor() {
         recordCorrectAction,
         getSignals,
         signalsRef: signals,
-    };
+    }), [startTrackingTask, stopTracking, recordInteraction, recordIncorrectAction, recordCorrectAction, getSignals]);
 }

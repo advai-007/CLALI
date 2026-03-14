@@ -13,15 +13,18 @@ import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { TrackingProvider } from './context/TrackingContext';
 import CalibrationPage from './pages/CalibrationPage';
+import RoleSelectionPage from './pages/RoleSelectionPage';
 
 // Workshop Game
 import { WorkshopProvider } from './games/workshop/WorkshopContext';
 import GarageHub from './games/workshop/screens/GarageHub';
-import GearboxStation from './games/workshop/screens/GearboxStation';
 import TireBalanceBay from './games/workshop/screens/TireBalanceBay';
 import WiringPanel from './games/workshop/screens/WiringPanel';
 import FuelMixMonitor from './games/workshop/screens/FuelMixMonitor';
 import BoltTightening from './games/workshop/screens/BoltTightening';
+
+// Demo Game
+import DemoScreen from './games/demo/DemoScreen';
 
 // Word Factory Game
 import { ReadingProvider } from './games/reading/ReadingContext';
@@ -30,6 +33,7 @@ import WordFactoryLevel2 from './games/reading/screens/WordFactoryLevel2';
 import WordFactoryLevel3 from './games/reading/screens/WordFactoryLevel3';
 import WordFactoryLevel4 from './games/reading/screens/WordFactoryLevel4';
 import WordFactoryLevel5 from './games/reading/screens/WordFactoryLevel5';
+import WordMatchingGame from './games/reading/screens/WordMatchingGame';
 
 function App() {
   return (
@@ -37,7 +41,8 @@ function App() {
       <TrackingProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<LoginPage />} />
+            <Route path="/" element={<RoleSelectionPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/student-login" element={<StudentLoginPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -84,9 +89,11 @@ function App() {
             <Route path="/reading" element={<ReadingModule />} />
             <Route path="/calibration" element={<CalibrationPage />} />
 
+            {/* Project Demo Story */}
+            <Route path="/story-demo" element={<DemoScreen />} />
+
             {/* Workshop Game Routes */}
             <Route path="/workshop" element={<WorkshopProvider><GarageHub /></WorkshopProvider>} />
-            <Route path="/workshop/gearbox" element={<WorkshopProvider><GearboxStation /></WorkshopProvider>} />
             <Route path="/workshop/tires" element={<WorkshopProvider><TireBalanceBay /></WorkshopProvider>} />
             <Route path="/workshop/wiring" element={<WorkshopProvider><WiringPanel /></WorkshopProvider>} />
             <Route path="/workshop/fuel" element={<WorkshopProvider><FuelMixMonitor /></WorkshopProvider>} />
@@ -99,6 +106,7 @@ function App() {
             <Route path="/word-factory/level3" element={<ReadingProvider><WordFactoryLevel3 /></ReadingProvider>} />
             <Route path="/word-factory/level4" element={<ReadingProvider><WordFactoryLevel4 /></ReadingProvider>} />
             <Route path="/word-factory/level5" element={<ReadingProvider><WordFactoryLevel5 /></ReadingProvider>} />
+            <Route path="/word-factory/matching" element={<ReadingProvider><WordMatchingGame /></ReadingProvider>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

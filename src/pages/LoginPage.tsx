@@ -74,24 +74,22 @@ const LoginPage = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-[#111a21] flex flex-col font-display transition-colors duration-300">
             {/* Top Navigation Bar */}
             <header className="w-full px-6 lg:px-20 py-6 flex justify-between items-center bg-transparent">
-                <div className="flex items-center gap-3 text-slate-900 dark:text-slate-100">
+                <div
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-3 text-slate-900 dark:text-slate-100 cursor-pointer hover:opacity-80 transition-opacity"
+                >
                     <div className="size-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white">
                         <School size={24} />
                     </div>
                     <h2 className="text-xl font-bold leading-tight tracking-tight">CLALI</h2>
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* Dark Mode Toggle */}
                     <button
                         onClick={() => setIsDark(!isDark)}
                         className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
                         aria-label="Toggle Dark Mode"
                     >
                         {isDark ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
-
-                    <button onMouseDown={() => navigate('/student-login')} className="hidden sm:block text-sm font-semibold text-[var(--color-primary)] hover:underline mr-2">
-                        Student Login
                     </button>
 
                     <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">New here?</span>

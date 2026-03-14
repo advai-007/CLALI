@@ -25,6 +25,12 @@ const ClassManagement: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
+    // Student View states
+    const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
+    const [students, setStudents] = useState<any[]>([]);
+    const [fetchingStudents, setFetchingStudents] = useState(false);
+    const [showStudentModal, setShowStudentModal] = useState(false);
+
     useEffect(() => {
         if (isDark) {
             document.documentElement.classList.add('dark');
@@ -125,6 +131,52 @@ const ClassManagement: React.FC = () => {
         }
     };
 
+    const handleViewClass = async (cls: ClassData) => {
+        setSelectedClass(cls);
+        setShowStudentModal(true);
+        setFetchingStudents(true);
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, full_name, avatar')
+                .eq('role', 'student')
+                .eq('class_id', cls.id)
+                .order('full_name');
+
+            if (error) throw error;
+            setStudents(data || []);
+        } catch (err) {
+            console.error("Error fetching students:", err);
+        } finally {
+            setFetchingStudents(false);
+        }
+    };
+
+    const handleRemoveStudent = async (studentId: string) => {
+        if (!window.confirm('Are you sure you want to remove this student from the class?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ class_id: null })
+                .eq('id', studentId);
+
+            if (error) throw error;
+
+            // Update local state
+            setStudents(prev => prev.filter(s => s.id !== studentId));
+            // Update class count
+            setClasses(prev => prev.map(c =>
+                c.id === selectedClass?.id
+                    ? { ...c, student_count: (c.student_count || 1) - 1 }
+                    : c
+            ));
+        } catch (err) {
+            console.error("Error removing student:", err);
+            alert("Failed to remove student");
+        }
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300 font-display min-h-screen">
             <div className="flex h-screen overflow-hidden">
@@ -153,12 +205,6 @@ const ClassManagement: React.FC = () => {
                             title="Class Management"
                         >
                             <span className="material-icons-round">assignment</span>
-                        </button>
-                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
-                            <span className="material-icons-round">analytics</span>
-                        </button>
-                        <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
-                            <span className="material-icons-round">settings</span>
                         </button>
                         <button
                             className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300"
@@ -277,7 +323,12 @@ const ClassManagement: React.FC = () => {
                                                 </div>
                                                 <div className="mt-auto pt-6 flex flex-col w-full">
                                                     <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
-                                                        <button className="text-[#3b82f6] font-bold text-sm hover:underline shrink-0">View Class</button>
+                                                        <button
+                                                            onClick={() => handleViewClass(cls)}
+                                                            className="text-[#3b82f6] font-bold text-sm hover:underline shrink-0"
+                                                        >
+                                                            View Class
+                                                        </button>
                                                         <button
                                                             className="text-red-500 font-medium text-sm hover:text-red-600 shrink-0"
                                                             onClick={async () => {
@@ -361,6 +412,81 @@ const ClassManagement: React.FC = () => {
                     </div>
                 </main>
             </div>
+
+            {/* Student List Modal */}
+            {showStudentModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-black text-slate-900 dark:text-white">{selectedClass?.name}</h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Class Code: <span className="font-mono text-[#3b82f6] capitalize">{selectedClass?.class_code}</span></p>
+                            </div>
+                            <button
+                                onClick={() => setShowStudentModal(false)}
+                                className="size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 transition-colors"
+                            >
+                                <span className="material-icons-round">close</span>
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                            {fetchingStudents ? (
+                                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3b82f6]"></div>
+                                    <p className="text-slate-500 font-medium italic">Fetching class list...</p>
+                                </div>
+                            ) : students.length === 0 ? (
+                                <div className="text-center py-20 px-10">
+                                    <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-700 mx-auto mb-4">
+                                        <span className="material-icons-round text-4xl">no_accounts</span>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">No students yet</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 mt-2">Share the class code with your students to get started!</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {students.map((student) => (
+                                        <div
+                                            key={student.id}
+                                            className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-between group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-12 rounded-xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-2xl border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+                                                    {student.avatar || '👤'}
+                                                </div>
+                                                <div className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">
+                                                    {student.full_name}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveStudent(student.id)}
+                                                className="size-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                                title="Remove from class"
+                                            >
+                                                <span className="material-icons-round text-lg">person_remove</span>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center text-xs">
+                            <span className="text-slate-400 font-medium">Total: {students.length} Students</span>
+                            <button
+                                onClick={() => setShowStudentModal(false)}
+                                className="px-6 py-2.5 bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-200 font-bold rounded-xl hover:opacity-90 transition-opacity"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

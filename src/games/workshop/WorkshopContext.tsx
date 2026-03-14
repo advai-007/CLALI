@@ -12,7 +12,6 @@ import {
 
 // ─── Station Definitions ────────────────────────────────────────────
 const INITIAL_STATIONS: StationInfo[] = [
-    { id: 'gearbox', title: 'Gearbox Station', icon: 'settings', route: '/workshop/gearbox', status: StationStatus.AVAILABLE },
     { id: 'tires', title: 'Tire Balance Bay', icon: 'tire_repair', route: '/workshop/tires', status: StationStatus.AVAILABLE },
     { id: 'bolts', title: 'Bolt Tightening', icon: 'build', route: '/workshop/bolts', status: StationStatus.AVAILABLE },
     { id: 'wiring', title: 'Wiring Panel', icon: 'cable', route: '/workshop/wiring', status: StationStatus.AVAILABLE },

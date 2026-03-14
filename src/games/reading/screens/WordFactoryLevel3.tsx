@@ -5,10 +5,10 @@ import WordFactoryHUD from '../components/WordFactoryHUD';
 import ConveyorBelt from '../components/ConveyorBelt';
 import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
-import HintOverlay from '../../workshop/components/HintOverlay';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
-import { AdaptiveState, POSITIVE_MESSAGES } from '../../workshop/workshopTypes';
+import { POSITIVE_MESSAGES } from '../../workshop/workshopTypes';
+import { CharacterGuide } from '../../../components/shared/CharacterGuide';
 import '../../workshop/workshop.css';
 
 // ─── Level 3 Data (Full Spelling) ──────────────────────────────────
@@ -17,11 +17,29 @@ const LEVEL_TASKS = [
     { id: 'car', word: 'CAR', icon: 'directions_car', distractors: ['T', 'B', 'M'] },
     { id: 'sun', word: 'SUN', icon: 'wb_sunny', distractors: ['F', 'M', 'P'] },
     { id: 'bug', word: 'BUG', icon: 'bug_report', distractors: ['M', 'H', 'D'] },
+    { id: 'map', word: 'MAP', icon: 'map', distractors: ['N', 'C', 'T'] },
+    { id: 'net', word: 'NET', icon: 'grid_on', distractors: ['B', 'S', 'F'] },
+    { id: 'fan', word: 'FAN', icon: 'mode_fan', distractors: ['B', 'T', 'P'] },
+    { id: 'cup', word: 'CUP', icon: 'coffee', distractors: ['S', 'R', 'T'] },
+    { id: 'hat', word: 'HAT', icon: 'face', distractors: ['B', 'C', 'M'] },
+    { id: 'log', word: 'LOG', icon: 'forest', distractors: ['D', 'F', 'P'] },
+    { id: 'log', word: 'LOG', icon: 'forest', distractors: ['D', 'F', 'P'] },
+    { id: 'jam', word: 'JAM', icon: 'breakfast_dining', distractors: ['H', 'R', 'T'] },
+    { id: 'rib', word: 'RIB', icon: 'lunch_dining', distractors: ['L', 'D', 'N'] },
 ];
 
 export default function WordFactoryLevel3() {
     const navigate = useNavigate();
-    const { adaptiveState, sendAdaptive, addStars, setCurrentLevel } = useReading();
+    const {
+        assistLevel,
+        trackClick,
+        trackError,
+        trackMouseMove,
+        resetAdaptation,
+        sendAdaptive,
+        addStars,
+        setCurrentLevel
+    } = useReading();
     const monitor = useReadingMonitor();
 
     const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
@@ -47,6 +65,25 @@ export default function WordFactoryLevel3() {
         return () => monitor.stopTracking();
     }, [currentTaskIdx, task.word.length, monitor, setCurrentLevel]);
 
+    // Reset adaptation metrics when task changes
+    useEffect(() => {
+        resetAdaptation(`level3-${currentTaskIdx}`);
+    }, [currentTaskIdx]);
+
+    // Track mouse movement for jitter detection
+    useEffect(() => {
+        window.addEventListener('mousemove', trackMouseMove);
+        return () => window.removeEventListener('mousemove', trackMouseMove);
+    }, [trackMouseMove]);
+
+    // 4-stage assist flags
+    const isReduced = assistLevel >= 2;
+    const isReveal = assistLevel >= 4;
+
+    // Identify the next empty slot for Guided / Max Assist
+    const nextEmptySlotIdx = placedLetters.findIndex(l => l === null);
+    const nextCorrectLetter = nextEmptySlotIdx !== -1 ? task.word[nextEmptySlotIdx] : null;
+
     // Available letters for the belt
     const beltItems = useMemo(() => {
         const requiredLetters = task.word.split('');
@@ -62,23 +99,32 @@ export default function WordFactoryLevel3() {
 
         let choices = [...neededLetters];
 
-        if (adaptiveState === AdaptiveState.NORMAL) {
-            choices = [...neededLetters, ...task.distractors];
-        } else if (adaptiveState === AdaptiveState.REDUCED_COMPLEXITY) {
-            // Include just one distractor
+        if (isReveal) {
+            choices = [...neededLetters]; // Stage 4: only required letters, no distractors
+        } else if (isReduced) {
+            // Stage 2: include just one distractor
             choices = [...neededLetters, task.distractors[0]];
+        } else {
+            choices = [...neededLetters, ...task.distractors];
         }
-        // GUIDED and MAX_ASSIST only show strictly needed letters.
 
-        // Deduplicate id for belt items by appending index if needed, 
-        // but for simplicity, let's assume words don't have repeating letters here, 
-        // or we just map them carefully. "DOG", "CAR", "SUN", "BUG" have no repeats.
-        return choices.sort().map(letter => ({
-            id: letter,
-            label: letter,
-            color: '#6EE7B7' // Mint green
-        }));
-    }, [task, adaptiveState, placedLetters]);
+        // Dedup and sort
+        return choices.sort().map(letter => {
+            const isTarget = letter === nextCorrectLetter;
+            let bgColor = '#6EE7B7'; // Default mint green
+
+            if (isTarget && isReveal) {
+                bgColor = '#34D399'; // Stage 4: bright emerald
+            }
+            // Stage 3 glow applied via CSS ring
+
+            return {
+                id: letter,
+                label: letter,
+                color: bgColor
+            };
+        });
+    }, [task, assistLevel, placedLetters, nextCorrectLetter]);
 
     const showFeedback = useCallback((msg: string, type: 'correct' | 'incorrect' | 'hint') => {
         setFeedbackMsg(msg);
@@ -89,7 +135,8 @@ export default function WordFactoryLevel3() {
     const handleDragStart = useCallback((id: string) => {
         setDraggedLetter(id);
         monitor.recordInteraction();
-    }, [monitor]);
+        trackClick();
+    }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -142,6 +189,7 @@ export default function WordFactoryLevel3() {
                     // Wrong letter for this slot
                     monitor.recordIncorrectAction();
                     sendAdaptive({ type: 'INCORRECT_ACTION' });
+                    trackError();
                     showFeedback("Not quite! Try a different letter.", 'incorrect');
                 }
             } else {
@@ -149,16 +197,11 @@ export default function WordFactoryLevel3() {
                 monitor.recordIncorrectAction();
             }
         },
-        [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, placedLetters, addStars]
+        [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, placedLetters, addStars, trackError]
     );
-
-    // Identify the next empty slot for Guided / Max Assist
-    const nextEmptySlotIdx = placedLetters.findIndex(l => l === null);
-    const nextCorrectLetter = nextEmptySlotIdx !== -1 ? task.word[nextEmptySlotIdx] : null;
-
     const maxAssistControls = useAnimation();
     useEffect(() => {
-        if (adaptiveState === AdaptiveState.MAX_ASSIST) {
+        if (isReveal) {
             maxAssistControls.start({
                 y: [0, -20, 0],
                 rotateZ: [0, 5, -5, 0],
@@ -167,10 +210,10 @@ export default function WordFactoryLevel3() {
         } else {
             maxAssistControls.stop();
         }
-    }, [adaptiveState, maxAssistControls]);
+    }, [isReveal, maxAssistControls]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans">
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
             <WordFactoryHUD title="Spell the Word" icon="spellcheck" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full h-full flex flex-col items-center justify-center min-h-screen relative z-10">
@@ -189,7 +232,8 @@ export default function WordFactoryLevel3() {
                         {task.word.split('').map((_char, index) => {
                             const isPlaced = placedLetters[index] !== null;
                             const isNextSlot = index === nextEmptySlotIdx;
-                            const shouldGlow = isNextSlot && (adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST);
+                            const shouldGlow = isNextSlot && isReveal;
+                            const isSoftGlow = isNextSlot && !isReveal && assistLevel >= 3;
 
                             return (
                                 <div
@@ -197,7 +241,11 @@ export default function WordFactoryLevel3() {
                                     ref={(el) => { slotRefs.current[index] = el; }}
                                     className={`w-28 h-32 rounded-3xl border-4 bg-black/40 flex items-center justify-center relative transition-colors duration-300 ${shouldGlow
                                         ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_30px_rgba(52,211,153,0.5)]'
-                                        : 'border-slate-600 border-dashed'
+                                        : isSoftGlow
+                                            ? 'border-emerald-300 bg-emerald-300/10 shadow-[0_0_20px_rgba(110,231,183,0.35)]'
+                                            : isNextSlot && isReduced
+                                                ? 'border-emerald-300/50 bg-emerald-400/10'
+                                                : 'border-slate-600 border-dashed'
                                         }`}
                                 >
                                     {isPlaced && (
@@ -218,7 +266,7 @@ export default function WordFactoryLevel3() {
                 <div className="relative w-full flex justify-center mt-auto">
                     <div className="absolute bottom-0 w-full flex justify-center items-center gap-6 pb-6 pointer-events-none z-50">
                         {beltItems.map((item) => {
-                            const isAssistTarget = item.id === nextCorrectLetter && adaptiveState === AdaptiveState.MAX_ASSIST;
+                            const isAssistTarget = item.id === nextCorrectLetter && isReveal;
 
                             return (
                                 <motion.div
@@ -253,22 +301,19 @@ export default function WordFactoryLevel3() {
                 </div>
             </main>
 
+            {/* Character Guide at the bottom */}
+            <div className="fixed bottom-4 left-4 z-40">
+                <CharacterGuide assistLevel={assistLevel} />
+            </div>
+
             <FeedbackToast message={feedbackMsg} type={feedbackType} triggerId={feedbackId} />
-
-            {adaptiveState === AdaptiveState.GUIDED && nextEmptySlotIdx !== -1 && (
-                <HintOverlay adaptiveState={adaptiveState} hintText="What letter comes next? Drag it to the glowing green box!" />
-            )}
-
-            {adaptiveState === AdaptiveState.MAX_ASSIST && nextEmptySlotIdx !== -1 && (
-                <HintOverlay adaptiveState={adaptiveState} hintText="The bouncing letter goes in the glowing box!" />
-            )}
 
             {showVictory && (
                 <VictoryModal
                     title="Spelling Bee!"
                     isOpen={true} starsEarned={1}
                     onNext={() => {
-                        navigate('/reading/level4');
+                        navigate('/word-factory/level4');
                     }}
                     onClose={() => navigate('/dashboard')}
                 />

@@ -38,7 +38,6 @@ export interface TaskProgress {
 
 // ─── Game Stations ──────────────────────────────────────────────────
 export type GameStation =
-    | 'gearbox'
     | 'tires'
     | 'wiring'
     | 'fuel'

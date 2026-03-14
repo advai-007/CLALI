@@ -5,26 +5,43 @@ import WordFactoryHUD from '../components/WordFactoryHUD';
 import ConveyorBelt from '../components/ConveyorBelt';
 import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
-import HintOverlay from '../../workshop/components/HintOverlay';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
-import { AdaptiveState, POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
+import { POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
 import type { WordTask } from '../readingTypes';
 import '../../workshop/workshop.css';
 
-// ─── Level 1 Data (CVC Words) ────────────────────────────────────────
+// ─── Level 1 Data (CVC Words — Missing Vowel) ─────────────────────────
 const LEVEL_TASKS: WordTask[] = [
     { id: 'cat', word: 'CAT', missingIndices: [1], distractors: ['E', 'I', 'O', 'U'] },
     { id: 'dog', word: 'DOG', missingIndices: [1], distractors: ['A', 'E', 'I', 'U'] },
     { id: 'pig', word: 'PIG', missingIndices: [1], distractors: ['A', 'E', 'O', 'U'] },
     { id: 'sun', word: 'SUN', missingIndices: [1], distractors: ['A', 'E', 'I', 'O'] },
+    { id: 'hen', word: 'HEN', missingIndices: [1], distractors: ['A', 'I', 'O', 'U'] },
+    { id: 'pan', word: 'PAN', missingIndices: [1], distractors: ['E', 'I', 'O', 'U'] },
+    { id: 'mop', word: 'MOP', missingIndices: [1], distractors: ['A', 'E', 'I', 'U'] },
+    { id: 'rug', word: 'RUG', missingIndices: [1], distractors: ['A', 'E', 'I', 'O'] },
+    { id: 'wet', word: 'WET', missingIndices: [1], distractors: ['A', 'I', 'O', 'U'] },
+    { id: 'fig', word: 'FIG', missingIndices: [1], distractors: ['A', 'E', 'O', 'U'] },
+    { id: 'cot', word: 'COT', missingIndices: [1], distractors: ['A', 'E', 'I', 'U'] },
+    { id: 'bud', word: 'BUD', missingIndices: [1], distractors: ['A', 'E', 'I', 'O'] },
 ];
 
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 
+import { CharacterGuide } from '../../../components/shared/CharacterGuide';
+
 export default function WordFactoryLevel1() {
     const navigate = useNavigate();
-    const { adaptiveState, sendAdaptive, addStars } = useReading();
+    const {
+        assistLevel,
+        trackClick,
+        trackError,
+        trackMouseMove,
+        resetAdaptation,
+        sendAdaptive,
+        addStars
+    } = useReading();
     const monitor = useReadingMonitor();
 
     const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
@@ -40,30 +57,57 @@ export default function WordFactoryLevel1() {
     // Refs for drop zone calculation
     const dropZoneRef = useRef<HTMLDivElement>(null);
 
-    // Filter conveyor items based on adaptive state
+    // Reset adaptation metrics when task changes
+    useEffect(() => {
+        resetAdaptation(`level1-${currentTaskIdx}`);
+    }, [currentTaskIdx]);
+
+    // Track mouse movement for jitter detection
+    useEffect(() => {
+        window.addEventListener('mousemove', trackMouseMove);
+        return () => window.removeEventListener('mousemove', trackMouseMove);
+    }, [trackMouseMove]);
+
+    // Stage flags derived from assistLevel:
+    // 1 = Encourage (Ollie speaks, no visual change)
+    // 2 = Reduce choices (correct + 1 distractor)
+    // 3 = Glow (soft pulsing ring on correct answer)
+    // 4 = Reveal (only correct shown, bright yellow)
+    const isReduced = assistLevel >= 2;
+    const isGlowing = assistLevel >= 3;
+    const isReveal = assistLevel >= 4;
+
+    // Filter conveyor items based on assist stage
     const beltItems = useMemo(() => {
         const correctVowel = task.word[task.missingIndices[0]];
         let choices = [...VOWELS];
 
-        if (adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST) {
-            // Only show the correct vowel
+        if (isReveal) {
+            // Stage 4: only correct answer, bright yellow
             choices = [correctVowel];
-        } else if (adaptiveState === AdaptiveState.REDUCED_COMPLEXITY) {
-            // eslint-disable-next-line react-hooks/purity
-            const dist = task.distractors[Math.floor(Math.random() * task.distractors.length)];
+        } else if (isReduced) {
+            // Stage 2: correct + 1 distractor
+            const distractors = task.distractors.filter(d => d !== correctVowel);
+            const dist = distractors[Math.floor(Math.random() * distractors.length)];
             choices = [correctVowel, dist].sort();
         }
 
         return choices.map(v => {
             const isCorrect = v === correctVowel;
-            const shouldHighlight = isCorrect && (adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST);
+            let bgColor = '#93C5FD'; // Default blue
+
+            if (isCorrect && isReveal) {
+                bgColor = '#FCD34D'; // Stage 4: bright yellow
+            }
+            // Stage 3 glow is applied via CSS ring, not bgColor
+
             return {
                 id: v,
                 label: v,
-                color: shouldHighlight ? '#FCD34D' : '#93C5FD' // Adaptive optional coloring
+                color: bgColor
             };
         });
-    }, [task, adaptiveState]);
+    }, [task, assistLevel]);
 
     useEffect(() => {
         monitor.startTrackingTask();
@@ -80,7 +124,8 @@ export default function WordFactoryLevel1() {
     const handleDragStart = useCallback((id: string, _e: any) => {
         setDraggedLetter(id);
         monitor.recordInteraction();
-    }, [monitor]);
+        trackClick();
+    }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,6 +165,7 @@ export default function WordFactoryLevel1() {
                     // Wrong!
                     monitor.recordIncorrectAction();
                     sendAdaptive({ type: 'INCORRECT_ACTION' });
+                    trackError();
                     showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
                 }
             } else {
@@ -127,13 +173,13 @@ export default function WordFactoryLevel1() {
                 monitor.recordIncorrectAction();
             }
         },
-        [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, addStars]
+        [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, addStars, trackError]
     );
 
-    // Max assist rhythmic pulse
+    // Max assist rhythmic pulse (Stage 4 = full reveal)
     const maxAssistControls = useAnimation();
     useEffect(() => {
-        if (adaptiveState === AdaptiveState.MAX_ASSIST) {
+        if (isReveal) {
             maxAssistControls.start({
                 y: [0, -20, 0],
                 rotateZ: [0, 5, -5, 0],
@@ -142,10 +188,10 @@ export default function WordFactoryLevel1() {
         } else {
             maxAssistControls.stop();
         }
-    }, [adaptiveState, maxAssistControls]);
+    }, [isReveal, maxAssistControls]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans">
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
             <WordFactoryHUD title="Missing Vowels" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full h-full flex flex-col items-center justify-center min-h-screen relative z-10">
@@ -166,9 +212,13 @@ export default function WordFactoryLevel1() {
                                     <div
                                         key={`slot-${index}`}
                                         ref={dropZoneRef}
-                                        className={`w-24 h-28 rounded-2xl border-4 border-dashed bg-black/40 flex items-center justify-center relative transition-colors duration-300 ${(adaptiveState === AdaptiveState.GUIDED || adaptiveState === AdaptiveState.MAX_ASSIST) && !placedLetter
+                                        className={`w-24 h-28 rounded-2xl border-4 border-dashed bg-black/40 flex items-center justify-center relative transition-colors duration-300 ${isReveal && !placedLetter
                                             ? 'border-yellow-400 bg-yellow-400/20 shadow-[0_0_30px_rgba(250,204,21,0.5)]'
-                                            : 'border-slate-400'
+                                            : isGlowing && !placedLetter
+                                                ? 'border-amber-300 bg-amber-300/10 shadow-[0_0_20px_rgba(251,191,36,0.35)]'
+                                                : isReduced && !placedLetter
+                                                    ? 'border-yellow-200/50 bg-yellow-200/10'
+                                                    : 'border-slate-400'
                                             }`}
                                     >
                                         {placedLetter && (
@@ -202,7 +252,7 @@ export default function WordFactoryLevel1() {
                         {beltItems.map((item) => {
                             if (placedLetter === item.id) return null;
                             const isCorrect = item.id === task.word[task.missingIndices[0]];
-                            const shouldAssist = isCorrect && adaptiveState === AdaptiveState.MAX_ASSIST;
+                            const shouldAssist = isCorrect && isReveal;
 
                             return (
                                 <motion.div
@@ -238,22 +288,19 @@ export default function WordFactoryLevel1() {
                 </div>
             </main>
 
+            {/* Character Guide at the bottom */}
+            <div className="fixed bottom-4 left-4 z-40">
+                <CharacterGuide assistLevel={assistLevel} />
+            </div>
+
             <FeedbackToast message={feedbackMsg} type={feedbackType} triggerId={feedbackId} />
-
-            {adaptiveState === AdaptiveState.GUIDED && !placedLetter && (
-                <HintOverlay adaptiveState={adaptiveState} hintText="Watch for the glowing yellow box! Drag the matching letter from the belt." />
-            )}
-
-            {adaptiveState === AdaptiveState.MAX_ASSIST && !placedLetter && (
-                <HintOverlay adaptiveState={adaptiveState} hintText="Look! The bouncing letter needs to go into the glowing box." />
-            )}
 
             {showVictory && (
                 <VictoryModal
                     title="Level Complete!"
                     isOpen={true} starsEarned={1}
                     onNext={() => {
-                        navigate('/reading/level2');
+                        navigate('/word-factory/level2');
                     }}
                     onClose={() => navigate('/dashboard')}
                 />

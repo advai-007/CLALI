@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { useActor } from '@xstate/react';
-import { adaptiveMachine } from '../workshop/adaptiveMachine';
+import { createContext, useContext, useState, useRef, useEffect, type ReactNode } from 'react';
+import { useFaceTracking } from '../../hooks/useFaceTracking';
+import { useAdaptation, type UseAdaptationReturn } from '../../hooks/useAdaptation';
+import { useReadingAdaptation } from './hooks/useReadingAdaptation';
+import { useTrackingContext } from '../../context/TrackingContext';
+import { useAuth } from '../../context/AuthContext';
 import type { AdaptiveState } from '../workshop/workshopTypes';
 import type { ReadingLevel } from './readingTypes';
 
@@ -10,9 +13,18 @@ interface ReadingContextType {
     totalStars: number;
     addStars: (stars: number) => void;
 
-    // Adaptive Tracking
+    // Graduated Adaptation
     adaptiveState: AdaptiveState;
-    sendAdaptive: ReturnType<typeof useActor>[1];
+    assistLevel: number;
+    difficultyScore: number;
+    trackClick: () => void;
+    trackError: () => void;
+    trackMouseMove: (e: { clientX: number; clientY: number }) => void;
+    resetAdaptation: (taskId: string) => void;
+
+    sendAdaptive: (event: { type: string; state?: AdaptiveState }) => void;
+    // Full adaptation metrics for the debug window
+    adaptationData: UseAdaptationReturn | null;
 
     // Debug Window
     showDebugPanel: boolean;
@@ -25,12 +37,77 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
     const [currentLevel, setCurrentLevel] = useState<ReadingLevel>(1);
     const [totalStars, setTotalStars] = useState(0);
     const [showDebugPanel, setShowDebugPanel] = useState(false);
+    const [taskId, setTaskId] = useState('initial');
 
-    // Reuse the adaptive machine from workshop for consistent behavior
-    const [adaptiveSnapshot, sendAdaptive] = useActor(adaptiveMachine);
+    // 1. Initialize Face Tracking
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const {
+        initializeTracker,
+        metrics: faceMetrics,
+        error: faceError
+    } = useFaceTracking(videoRef);
 
-    // Sync state
-    const adaptiveState = adaptiveSnapshot.context.state;
+    useEffect(() => {
+        initializeTracker();
+    }, [initializeTracker]);
+
+    // Pick up the CalibrationContext baseline (set during the manual calib flow).
+    // If no manual baseline exists, SignalNormalizer will self-calibrate automatically.
+    const { baseline: trackingBaseline } = useTrackingContext();
+
+    // 2. Feed face metrics + baseline into Adaptation engine (Face + Device signals)
+    const { studentUser } = useAuth();
+    const adaptationData = useAdaptation({
+        faceMetrics,
+        baseline: trackingBaseline,
+        autoStart: true,
+        studentId: studentUser?.id
+    });
+    const appAdaptiveState = adaptationData.state;
+
+    // 3. Interaction-based Adaptation — now receives adaptationData to fuse all signals
+    const {
+        assistLevel,
+        difficultyScore,
+        trackClick,
+        trackError,
+        trackMouseMove
+    } = useReadingAdaptation(taskId, adaptationData);
+
+    const resetAdaptation = (newId: string) => setTaskId(newId);
+
+    // ─── Debounced Adaptive State (Face-based fallback for legacy UI) ───────────
+    const STATE_HOLD_MS = 5000;
+    const candidateRef = useRef<{ state: AdaptiveState; since: number }>({
+        state: 'NORMAL' as AdaptiveState,
+        since: Date.now(),
+    });
+    const [adaptiveState, setAdaptiveState] = useState<AdaptiveState>('NORMAL' as AdaptiveState);
+
+    useEffect(() => {
+        let candidate: AdaptiveState = 'NORMAL' as AdaptiveState;
+        if (appAdaptiveState === 'mildStress' || appAdaptiveState === 'distracted') {
+            candidate = 'REDUCED_COMPLEXITY' as AdaptiveState;
+        } else if (appAdaptiveState === 'highStress' || appAdaptiveState === 'disengaged') {
+            candidate = 'GUIDED' as AdaptiveState;
+        }
+
+        const now = Date.now();
+        if (candidate !== candidateRef.current.state) {
+            candidateRef.current = { state: candidate, since: now };
+        } else if (now - candidateRef.current.since >= STATE_HOLD_MS) {
+            setAdaptiveState(candidate);
+        }
+    }, [appAdaptiveState]);
+
+    const sendAdaptive = (event: { type: string; state?: AdaptiveState }) => {
+        if (event.type === 'CORRECT_ACTION') {
+            adaptationData?.registerGameEvent('correct');
+        } else if (event.type === 'INCORRECT_ACTION') {
+            adaptationData?.registerGameEvent('incorrect');
+            trackError();
+        }
+    };
 
     const addStars = (stars: number) => setTotalStars(prev => prev + stars);
 
@@ -41,10 +118,33 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
             totalStars,
             addStars,
             adaptiveState,
+            assistLevel,
+            difficultyScore,
+            trackClick,
+            trackError,
+            trackMouseMove,
+            resetAdaptation,
             sendAdaptive,
+            adaptationData,
             showDebugPanel,
             setShowDebugPanel,
         }}>
+            {/* Hidden video element for MediaPipe face tracking */}
+            <video
+                ref={videoRef}
+                className="hidden"
+                playsInline
+                muted
+                autoPlay
+            />
+
+            {/* Optional debug warning if camera fails */}
+            {faceError && showDebugPanel && (
+                <div className="fixed top-20 left-4 z-50 bg-red-500 text-white p-2 rounded text-xs truncate max-w-xs">
+                    Camera Warning: {faceError}
+                </div>
+            )}
+
             {children}
         </ReadingContext.Provider>
     );

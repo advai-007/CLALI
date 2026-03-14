@@ -87,26 +87,26 @@ const DISENGAGED_ADAPTATIONS: AdaptationConfig = {
 
 const THRESHOLDS = {
     stress: {
-        enterMild: 0.4,
-        exitMild: 0.3,
-        enterHigh: 0.7,
-        exitHigh: 0.5,
+        enterMild: 0.3,    // Reduced from 0.4
+        exitMild: 0.2,     // Reduced from 0.3
+        enterHigh: 0.6,    // Reduced from 0.7
+        exitHigh: 0.4,     // Reduced from 0.5
     },
     focus: {
-        enterDistracted: 0.4,   // focus drops below this → distracted
-        exitDistracted: 0.5,    // focus rises above this → calm
-        enterDisengaged: 0.2,   // focus drops below this → disengaged
-        exitDisengaged: 0.3,    // focus rises above this → back to distracted
+        enterDistracted: 0.5,   // Increased from 0.4 -> distracted sooner
+        exitDistracted: 0.6,    // Increased from 0.5
+        enterDisengaged: 0.3,   // Increased from 0.2 -> disengaged sooner
+        exitDisengaged: 0.4,    // Increased from 0.3
     },
-    // Sustained duration (ms) before transition fires
+    // Sustained duration (ms) before transition fires - DRASTICALLY REDUCED
     sustainedMs: {
-        toMildStress: 3000,
-        toHighStress: 5000,
-        toCalmFromStress: 4000,
-        toDistracted: 3000,
-        toDisengaged: 5000,
-        toCalmFromDistracted: 4000,
-        fromDisengaged: 3000,
+        toMildStress: 1000,        // Was 3000
+        toHighStress: 1500,        // Was 5000
+        toCalmFromStress: 2000,    // Was 4000
+        toDistracted: 1000,        // Was 3000
+        toDisengaged: 2000,        // Was 5000
+        toCalmFromDistracted: 2000,// Was 4000
+        fromDisengaged: 1500,      // Was 3000
     },
 };
 

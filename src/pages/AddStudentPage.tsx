@@ -179,12 +179,6 @@ const AddStudentPage: React.FC = () => {
                     >
                         <span className="material-icons-round">assignment</span>
                     </button>
-                    <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
-                        <span className="material-icons-round">analytics</span>
-                    </button>
-                    <button className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300">
-                        <span className="material-icons-round">settings</span>
-                    </button>
                     <button
                         className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-white hover:bg-[#3b82f6] hover:shadow-lg hover:shadow-blue-500/20 hover:scale-110 active:scale-95 transition-all duration-300"
                         onClick={() => navigate('/add-student')}

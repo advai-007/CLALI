@@ -9,6 +9,7 @@ import type { ExtractedFeatures } from '../utils/tracking/FeatureExtractor';
 import { sensorBridge } from '../utils/tracking/SensorBridge';
 import type { FaceMetrics } from '../utils/tracking/FaceFeatureExtractor';
 import type { TrackingBaseline } from '../context/TrackingContext';
+import { studentMetricsApi } from '../services/studentMetricsApi';
 
 export interface UseAdaptationOptions {
     /** Face metrics from useFaceTracking (optional — system works without camera) */
@@ -17,6 +18,8 @@ export interface UseAdaptationOptions {
     baseline?: TrackingBaseline | null;
     /** If true, sensors are started/stopped automatically */
     autoStart?: boolean;
+    /** Optional student ID for logging interaction data to Supabase */
+    studentId?: string | null;
 }
 
 export interface UseAdaptationReturn {
@@ -35,6 +38,8 @@ export interface UseAdaptationReturn {
     faceMetrics: FaceMetrics | null;
     /** Force the machine into a specific state (for dev panel) */
     override: (state: AdaptationState) => void;
+    /** Game-specific interaction events */
+    registerGameEvent: (eventType: 'correct' | 'incorrect') => void;
     /** Whether sensors are running */
     isActive: boolean;
     /** Start sensor tracking */
@@ -44,7 +49,7 @@ export interface UseAdaptationReturn {
 }
 
 export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptationReturn {
-    const { faceMetrics = null, baseline = null, autoStart = true } = options;
+    const { faceMetrics = null, baseline = null, autoStart = true, studentId = null } = options;
 
     const [machineState, send] = useMachine(adaptationMachine);
 
@@ -71,6 +76,10 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
         baselineRef.current = baseline;
     }, [baseline]);
 
+    // Logging throttle ref
+    const lastLogTime = useRef(0);
+    const lastLoggedState = useRef<string | null>(null);
+
     // Subscribe to feature extractor and feed into normalizer → XState
     useEffect(() => {
         const unsubscribeSensor = sensorBridge.subscribe(featureExtractor.processRawData);
@@ -96,6 +105,25 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
             unsubscribeFeatures();
         };
     }, [normalizer, send]);
+
+    // Handle logging of state changes
+    useEffect(() => {
+        const currentStateName = (typeof machineState.value === 'string'
+            ? machineState.value
+            : 'calm') as string;
+
+        // Log if state changed or if it's been more than 30 seconds since last log
+        const now = Date.now();
+        if (studentId && (currentStateName !== lastLoggedState.current || now - lastLogTime.current > 30000)) {
+            studentMetricsApi.logAdaptationEvent(
+                studentId,
+                currentStateName.toUpperCase(),
+                machineState.context.adaptations.showCalmingWidget ? 'SHOW_CALMING_WIDGET' : 'NONE'
+            );
+            lastLoggedState.current = currentStateName;
+            lastLogTime.current = now;
+        }
+    }, [machineState.value, machineState.context.adaptations.showCalmingWidget, studentId]);
 
     // Auto-start sensors
     useEffect(() => {
@@ -153,6 +181,17 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
         rawFeatures,
         faceMetrics: faceMetrics,
         override,
+        registerGameEvent: (eventType: 'correct' | 'incorrect') => {
+            normalizer.registerGameEvent(eventType);
+            // Also log specific game events if studentId is present
+            if (studentId) {
+                studentMetricsApi.logAdaptationEvent(
+                    studentId,
+                    eventType === 'correct' ? 'SUCCESS' : 'ERROR',
+                    `GAME_EVENT_${eventType.toUpperCase()}`
+                );
+            }
+        },
         isActive: isActive,
         start,
         stop,

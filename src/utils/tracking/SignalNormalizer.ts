@@ -9,7 +9,7 @@ export type NormalizedScores = {
     timeOnTask: number;    // seconds
 };
 
-// Weights for stress score components (sum should be ~1.0)
+// Weights for stress score components
 const STRESS_WEIGHTS = {
     franticTaps: 0.20,
     scrollYoYo: 0.12,
@@ -31,8 +31,22 @@ const FOCUS_WEIGHTS = {
     orientationChange: 0.15,
 };
 
-// EMA smoothing factor (0-1, lower = more smoothing)
-const EMA_ALPHA = 0.3;
+// EMA smoothing factor (0-1, higher = less smoothing, faster reaction)
+const EMA_ALPHA = 0.6;
+
+// --- Absolute fallback thresholds (used when NO baseline exists) ---
+// These represent "neutral face looking straight at screen" guidelines.
+// EAR of a normal open eye ≈ 0.25–0.35; below 0.22 = drowsy
+const ABSOLUTE = {
+    earOpen: 0.28,         // expected open-eye EAR for a child
+    earDropThreshold: 0.05, // deviation below earOpen = drowsy
+    yawDistracted: 0.20,   // |yaw| > this = looking sideways (absolute)
+    pitchDistracted: 0.18, // |pitch| > this = looking up/down (absolute)
+};
+
+// Self-calibration: collect face samples for the first CALIBRATION_WINDOW_MS
+const CALIBRATION_WINDOW_MS = 5000; // 5 seconds of neutral face data
+const MIN_CALIBRATION_SAMPLES = 8;  // need at least N samples before trusting it
 
 export class SignalNormalizer {
     private smoothedStress: number = 0;
@@ -46,6 +60,68 @@ export class SignalNormalizer {
     private blinkTimestamps: number[] = [];
     private wasBelow = false;
 
+    // Game Event tracking
+    private recentErrors = 0;
+    private lastErrorDecay = Date.now();
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Self-calibration: automatically build an internal baseline from the
+    // first CALIBRATION_WINDOW_MS of face data so face tracking works even
+    // when the user hasn't gone through the manual calibration flow.
+    // ──────────────────────────────────────────────────────────────────────────
+    private calibStartTime: number = Date.now();
+    private calibSamples: { ear: number; yaw: number; pitch: number }[] = [];
+    private internalBaseline: TrackingBaseline | null = null;
+    private calibrationDone: boolean = false;
+
+    /** Expose whether self-calibration is complete (for debug panel) */
+    public get isCalibrated(): boolean {
+        return this.calibrationDone;
+    }
+
+    /** Expose internal baseline (for debug) */
+    public get baseline(): TrackingBaseline | null {
+        return this.internalBaseline;
+    }
+
+    private tryCalibrate(faceMetrics: FaceMetrics, now: number): void {
+        if (this.calibrationDone) return;
+
+        const elapsed = now - this.calibStartTime;
+        if (elapsed <= CALIBRATION_WINDOW_MS) {
+            // Still in calibration window — collect samples
+            this.calibSamples.push({
+                ear: faceMetrics.ear,
+                yaw: faceMetrics.headYaw,
+                pitch: faceMetrics.headPitch,
+            });
+        } else if (this.calibSamples.length >= MIN_CALIBRATION_SAMPLES) {
+            // Compute mean of collected samples as the baseline
+            const n = this.calibSamples.length;
+            const avgEar = this.calibSamples.reduce((s, v) => s + v.ear, 0) / n;
+            const avgYaw = this.calibSamples.reduce((s, v) => s + v.yaw, 0) / n;
+            const avgPitch = this.calibSamples.reduce((s, v) => s + v.pitch, 0) / n;
+
+            this.internalBaseline = { avgEar, avgYaw, avgPitch };
+            this.calibrationDone = true;
+            console.info('[SignalNormalizer] Self-calibration complete:', this.internalBaseline);
+        } else {
+            // Not enough samples — extend window and keep collecting
+            this.calibStartTime = now;
+        }
+    }
+
+    /** Register game-level interactions directly */
+    public registerGameEvent(eventType: 'correct' | 'incorrect') {
+        if (eventType === 'incorrect') {
+            this.recentErrors += 1;
+        } else if (eventType === 'correct') {
+            this.recentErrors = 0;
+            this.smoothedFocus = Math.min(1.0, this.smoothedFocus + 0.2);
+            this.smoothedStress = Math.max(0.0, this.smoothedStress - 0.2);
+        }
+    }
+
     /** Reset session timer (call when student starts a new reading session) */
     public resetSession() {
         this.sessionStartTime = Date.now();
@@ -54,54 +130,50 @@ export class SignalNormalizer {
         this.earHistory = [];
         this.blinkTimestamps = [];
         this.wasBelow = false;
+        this.recentErrors = 0;
+        this.lastErrorDecay = Date.now();
+        // DON'T reset calibration — it carries over between tasks
     }
 
     /**
      * Normalize raw features + face metrics into composite scores.
-     * Face metrics and baseline are optional — system works without camera.
+     * Now works in three tiers:
+     *   1. External baseline (from manual TrackingContext calibration) — most accurate
+     *   2. Internal self-calibrated baseline (auto-computed from first 5s) — good
+     *   3. Absolute fallback thresholds — always works, no calibration needed
      */
     public normalize(
         features: ExtractedFeatures,
         faceMetrics: FaceMetrics | null,
-        baseline: TrackingBaseline | null
+        externalBaseline: TrackingBaseline | null
     ): NormalizedScores {
         const now = Date.now();
 
+        // Run self-calibration if we have face data and no external baseline
+        if (faceMetrics && !externalBaseline && !this.calibrationDone) {
+            this.tryCalibrate(faceMetrics, now);
+        }
+
+        // Determine active baseline: prefer external (manual), then internal (auto)
+        const baseline: TrackingBaseline | null = externalBaseline ?? this.internalBaseline;
+
         // --- Compute raw stress components (each 0-1) ---
 
-        // Frantic taps: 0 = none, 1 = 8+ taps in cluster
         const franticTapScore = clamp(features.franticTaps / 8, 0, 1);
-
-        // Scroll yo-yo: 0 = none, 1 = 6+ direction changes in window
         const scrollYoYoScore = clamp(features.scrollYoYoCount / 6, 0, 1);
-
-        // Motion magnitude: normalize against ~20 m/s² (heavy shaking)
-        // Subtract resting gravity (~9.8) as baseline
         const adjustedMotion = Math.max(0, features.motionMagnitude - 9.8);
         const motionScore = clamp(adjustedMotion / 10, 0, 1);
-
-        // Touch hold: long holds > 3s indicate hesitation
         const touchHoldScore = clamp(features.touchHoldDuration / 3000, 0, 1);
-
-        // Touch pressure (tablet): 0-1 directly from Touch.force
         const pressureScore = clamp(features.avgTouchPressure, 0, 1);
-
-        // Grip touches (tablet): 3 = threshold, 5+ = high stress
         const gripScore = clamp((features.gripTouchCount - 2) / 3, 0, 1);
-
-        // Tilt variance (tablet): higher variance = more fidgeting
-        // Typical calm variance < 10, stressed > 50
         const tiltScore = clamp(features.tiltVariance / 50, 0, 1);
 
-        // Head roll from face (if available)
         let headRollScore = 0;
         if (faceMetrics) {
-            // Roll in radians, typical range ~-0.3 to 0.3
             headRollScore = clamp(Math.abs(faceMetrics.headRoll) / 0.3, 0, 1);
         }
 
-        // Weighted stress score
-        const rawStress =
+        let rawStress =
             STRESS_WEIGHTS.franticTaps * franticTapScore +
             STRESS_WEIGHTS.scrollYoYo * scrollYoYoScore +
             STRESS_WEIGHTS.motionMagnitude * motionScore +
@@ -111,49 +183,70 @@ export class SignalNormalizer {
             STRESS_WEIGHTS.tiltVariance * tiltScore +
             STRESS_WEIGHTS.headRoll * headRollScore;
 
+        // Game error penalty (decays every 5s)
+        if (now - this.lastErrorDecay > 5000) {
+            this.recentErrors = Math.max(0, this.recentErrors - 1);
+            this.lastErrorDecay = now;
+        }
+        const errorStress = Math.min(1.0, this.recentErrors * 0.4);
+        rawStress = Math.min(1.0, rawStress + errorStress);
+
         // --- Compute raw focus components (each 0-1, where 1 = focused) ---
 
-        // EAR deviation from baseline (drowsiness)
-        let earScore = 1; // default: focused
-        if (faceMetrics && baseline) {
-            const earDev = Math.abs(faceMetrics.ear - baseline.avgEar);
-            // Deviation > 0.1 from baseline = significant drowsiness
-            earScore = 1 - clamp(earDev / 0.1, 0, 1);
-        }
-
-        // Head yaw deviation (looking away)
+        let earScore = 1;
         let yawScore = 1;
-        if (faceMetrics && baseline) {
-            const yawDev = Math.abs(faceMetrics.headYaw - baseline.avgYaw);
-            // Looking 0.3+ sideways = distracted
-            yawScore = 1 - clamp(yawDev / 0.3, 0, 1);
-        }
-
-        // Head pitch deviation (looking down/up, not at screen)
         let pitchScore = 1;
-        if (faceMetrics && baseline) {
-            const pitchDev = Math.abs(faceMetrics.headPitch - baseline.avgPitch);
-            pitchScore = 1 - clamp(pitchDev / 0.3, 0, 1);
+
+        if (faceMetrics) {
+            if (baseline) {
+                // ── Tier 1 & 2: Baseline-deviation scoring (accurate) ──────────────────
+
+                // EAR: deviation > 0.08 = drowsy (tighter than before for self-calib)
+                const earDev = Math.abs(faceMetrics.ear - baseline.avgEar);
+                earScore = 1 - clamp(earDev / 0.08, 0, 1);
+
+                // Yaw: deviation > 0.25 = clearly looking sideways
+                const yawDev = Math.abs(faceMetrics.headYaw - baseline.avgYaw);
+                yawScore = 1 - clamp(yawDev / 0.25, 0, 1);
+
+                // Pitch: deviation > 0.25 = clearly looking away
+                const pitchDev = Math.abs(faceMetrics.headPitch - baseline.avgPitch);
+                pitchScore = 1 - clamp(pitchDev / 0.25, 0, 1);
+
+            } else {
+                // ── Tier 3: Absolute fallback — no calibration at all ─────────────────
+                // Use universally sensible thresholds for a child sitting at a device.
+
+                // EAR: below (earOpen - earDropThreshold) = drowsy/closed eyes
+                const ear = faceMetrics.ear;
+                const earExpected = ABSOLUTE.earOpen;
+                const earDrop = Math.max(0, earExpected - ear); // only penalise low EAR
+                earScore = 1 - clamp(earDrop / ABSOLUTE.earDropThreshold, 0, 1);
+
+                // Yaw: absolute magnitude > 0.20 = looking sideways
+                yawScore = 1 - clamp(Math.abs(faceMetrics.headYaw) / ABSOLUTE.yawDistracted, 0, 1);
+
+                // Pitch: absolute magnitude > 0.18 = looking away (head tilt up/down)
+                pitchScore = 1 - clamp(Math.abs(faceMetrics.headPitch) / ABSOLUTE.pitchDistracted, 0, 1);
+            }
         }
 
-        // Idle: if idle, focus is low
         const idleScore = features.isIdle ? 0 : 1;
-
-        // Visibility: tab hidden means not focused
         const visibilityScore = features.isVisible ? 1 : 0;
-
-        // Orientation change rate (tablet): rotating device = distraction
-        // 0 changes = focused, 4+ = very distracted
         const orientationScore = 1 - clamp(features.orientationChangeRate / 4, 0, 1);
 
-        // Weighted focus score
-        const rawFocus =
+        let rawFocus =
             FOCUS_WEIGHTS.earDeviation * earScore +
             FOCUS_WEIGHTS.yawDeviation * yawScore +
             FOCUS_WEIGHTS.pitchDeviation * pitchScore +
             FOCUS_WEIGHTS.idle * idleScore +
             FOCUS_WEIGHTS.visibility * visibilityScore +
             FOCUS_WEIGHTS.orientationChange * orientationScore;
+
+        // Sustained idle = instant heavy focus drop (forces state change)
+        if (features.isIdle) {
+            rawFocus = 0.1;
+        }
 
         // --- EMA smoothing ---
         this.smoothedStress = ema(this.smoothedStress, rawStress, EMA_ALPHA);
@@ -164,19 +257,16 @@ export class SignalNormalizer {
             this.earHistory.push({ value: faceMetrics.ear, time: now });
             this.earHistory = this.earHistory.filter(e => now - e.time <= this.BLINK_WINDOW);
 
-            // Detect blink: EAR drops below threshold then rises back
             const isBelowThreshold = faceMetrics.ear < this.EAR_BLINK_THRESHOLD;
             if (this.wasBelow && !isBelowThreshold) {
-                // Blink completed (rose back up)
                 this.blinkTimestamps.push(now);
             }
             this.wasBelow = isBelowThreshold;
             this.blinkTimestamps = this.blinkTimestamps.filter(t => now - t <= this.BLINK_WINDOW);
         }
 
-        const blinkRate = this.blinkTimestamps.length; // blinks in last minute
-
-        const timeOnTask = (now - this.sessionStartTime) / 1000; // seconds
+        const blinkRate = this.blinkTimestamps.length;
+        const timeOnTask = (now - this.sessionStartTime) / 1000;
 
         return {
             stressScore: clamp(this.smoothedStress, 0, 1),

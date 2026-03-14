@@ -19,6 +19,9 @@ class SensorBridge {
     private boundHandleTouchStart = this.handleTouchStart.bind(this);
     private boundHandleTouchMove = this.handleTouchMove.bind(this);
     private boundHandleTouchEnd = this.handleTouchEnd.bind(this);
+    private boundHandleMouseDown = this.handleMouseDown.bind(this);
+    private boundHandleMouseMove = this.handleMouseMove.bind(this);
+    private boundHandleMouseUp = this.handleMouseUp.bind(this);
     private boundHandleScroll = this.handleScroll.bind(this);
     private boundHandleDeviceMotion = this.handleDeviceMotion.bind(this);
     private boundHandleDeviceOrientation = this.handleDeviceOrientation.bind(this);
@@ -74,6 +77,12 @@ class SensorBridge {
         window.addEventListener('touchmove', this.boundHandleTouchMove, { passive: true });
         window.addEventListener('touchend', this.boundHandleTouchEnd, { passive: true });
         window.addEventListener('touchcancel', this.boundHandleTouchEnd, { passive: true });
+
+        // Mouse fallbacks for desktop testing
+        window.addEventListener('mousedown', this.boundHandleMouseDown, { passive: true });
+        window.addEventListener('mousemove', this.boundHandleMouseMove, { passive: true });
+        window.addEventListener('mouseup', this.boundHandleMouseUp, { passive: true });
+
         window.addEventListener('scroll', this.boundHandleScroll, { passive: true });
         window.addEventListener('devicemotion', this.boundHandleDeviceMotion, { passive: true });
         window.addEventListener('deviceorientation', this.boundHandleDeviceOrientation, { passive: true });
@@ -96,6 +105,11 @@ class SensorBridge {
         window.removeEventListener('touchmove', this.boundHandleTouchMove);
         window.removeEventListener('touchend', this.boundHandleTouchEnd);
         window.removeEventListener('touchcancel', this.boundHandleTouchEnd);
+
+        window.removeEventListener('mousedown', this.boundHandleMouseDown);
+        window.removeEventListener('mousemove', this.boundHandleMouseMove);
+        window.removeEventListener('mouseup', this.boundHandleMouseUp);
+
         window.removeEventListener('scroll', this.boundHandleScroll);
         window.removeEventListener('devicemotion', this.boundHandleDeviceMotion);
         window.removeEventListener('deviceorientation', this.boundHandleDeviceOrientation);
@@ -172,6 +186,56 @@ class SensorBridge {
                 }
             });
         }
+    }
+
+    // --- Mouse Fallbacks ---
+
+    private isMouseDown = false;
+
+    private handleMouseDown(e: MouseEvent) {
+        this.updateActivity();
+        this.isMouseDown = true;
+        this.dispatch({
+            type: 'touch',
+            data: {
+                action: 'start',
+                id: 999, // Fake touch ID for mouse
+                x: e.clientX,
+                y: e.clientY,
+                force: 0.5 // Default fake pressure
+            }
+        });
+    }
+
+    private handleMouseMove(e: MouseEvent) {
+        this.updateActivity();
+        if (this.isMouseDown) {
+            this.dispatch({
+                type: 'touch',
+                data: {
+                    action: 'move',
+                    id: 999,
+                    x: e.clientX,
+                    y: e.clientY,
+                    force: 0.5
+                }
+            });
+        }
+    }
+
+    private handleMouseUp(e: MouseEvent) {
+        this.updateActivity();
+        this.isMouseDown = false;
+        this.dispatch({
+            type: 'touch',
+            data: {
+                action: 'end',
+                id: 999,
+                x: e.clientX,
+                y: e.clientY,
+                force: 0
+            }
+        });
     }
 
     private handleScroll() {
