@@ -11,19 +11,20 @@ interface Props {
 }
 
 export function SentenceBuilder({ data, assistLevel, onCorrect, onError, onInteract }: Props) {
-    const [words, setWords] = useState<string[]>(() => data.scrambledSentence ?? []);
+    const { scrambledSentence, correctOrder, question } = data;
+    const [words, setWords] = useState<string[]>(() => scrambledSentence ?? []);
     const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
 
-    if (!data.scrambledSentence || !data.correctOrder) return null;
+    if (!scrambledSentence || !correctOrder) return null;
 
-    const displayedWords = assistLevel === 4 ? data.correctOrder : words;
+    const displayedWords = assistLevel === 4 ? correctOrder : words;
 
     const checkOrder = () => {
         if (feedback === 'correct') return;
 
         onInteract();
         const current = displayedWords.join(' ');
-        const correct = data.correctOrder.join(' ');
+        const correct = correctOrder.join(' ');
 
         if (current === correct) {
             setFeedback('correct');
@@ -42,9 +43,9 @@ export function SentenceBuilder({ data, assistLevel, onCorrect, onError, onInter
 
     return (
         <div className="w-full flex flex-col items-center gap-8">
-            {data.question && (
+            {question && (
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-800 bg-white/70 px-6 py-3 rounded-full shadow-sm text-center border border-white">
-                    {data.question}
+                    {question}
                 </h3>
             )}
 
@@ -68,7 +69,7 @@ export function SentenceBuilder({ data, assistLevel, onCorrect, onError, onInter
 
             {assistLevel >= 3 && (
                 <div className="rounded-2xl bg-amber-50 border-2 border-amber-200 px-5 py-3 text-amber-900 font-medium shadow-sm">
-                    Helper sentence: {data.correctOrder.join(' ')}
+                    Helper sentence: {correctOrder.join(' ')}
                 </div>
             )}
 
@@ -79,7 +80,7 @@ export function SentenceBuilder({ data, assistLevel, onCorrect, onError, onInter
                 className="flex flex-wrap justify-center gap-3 sm:gap-4 w-full max-w-3xl p-4 bg-white/50 rounded-3xl border-2 border-dashed border-gray-300"
             >
                 {displayedWords.map((word, index) => {
-                    const isRightPlace = word === data.correctOrder[index];
+                    const isRightPlace = word === correctOrder[index];
                     const showHint = assistLevel >= 2 && isRightPlace && feedback === 'idle';
 
                     let bg = 'bg-white text-gray-700 border-gray-200';
