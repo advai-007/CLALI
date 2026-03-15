@@ -56,7 +56,7 @@ export interface StudentDetails {
         type: string;
         description: string;
         isCritical: boolean;
-        stateCategory: 'calm' | 'stress' | 'distracted' | 'success' | 'error' | 'other';
+        stateCategory: 'calm' | 'mildstress' | 'highstress' | 'distracted' | 'disengaged' | 'success' | 'error' | 'other';
     }[];
 }
 
@@ -74,13 +74,22 @@ function stateToLoad(state: string): number {
 }
 
 /** Classify a trigger_state string into a display category */
-function categorizeState(state: string): 'calm' | 'stress' | 'distracted' | 'success' | 'error' | 'other' {
+function categorizeState(state: string): 'calm' | 'mildstress' | 'highstress' | 'distracted' | 'disengaged' | 'success' | 'error' | 'other' {
     const s = state.toLowerCase();
-    if (s === 'calm') return 'calm';
+    if (s === 'calm' || s === 'normal_layout') return 'calm';
     if (s === 'success') return 'success';
     if (s === 'error') return 'error';
-    if (s.includes('stress')) return 'stress';
-    if (s.includes('distract') || s.includes('disengage')) return 'distracted';
+    if (s === 'mildstress') return 'mildstress';
+    if (s === 'highstress') return 'highstress';
+    if (s === 'distracted') return 'distracted';
+    if (s === 'disengaged') return 'disengaged';
+    
+    // Fallbacks
+    if (s.includes('high') && s.includes('stress')) return 'highstress';
+    if (s.includes('stress')) return 'mildstress';
+    if (s.includes('distract')) return 'distracted';
+    if (s.includes('disengage')) return 'disengaged';
+    
     return 'other';
 }
 
@@ -294,7 +303,7 @@ export const studentMetricsApi = {
                 time: new Date(e.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 ampm: new Date(e.created_at).toLocaleTimeString([], { hour12: true }).split(' ')[1] || '',
                 type: e.trigger_state,
-                description: e.action_taken === 'NONE' || e.action_taken === 'NORMAL_LAYOUT'
+                description: (!e.action_taken || e.action_taken === 'NONE' || e.action_taken === 'NORMAL_LAYOUT')
                     ? 'State update'
                     : e.action_taken.replace(/\+/g, ' · ').replace(/_/g, ' ').toLowerCase(),
                 isCritical: e.trigger_state.includes('HIGHSTRESS') || e.trigger_state.includes('DISENGAGED'),

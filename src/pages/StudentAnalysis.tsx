@@ -3,27 +3,71 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { studentMetricsApi, type ClassMetrics, type StudentDetails } from '../services/studentMetricsApi';
 
+// ─── Colors ────────────────────────────────────────────────────────
+const STATE_COLORS: Record<string, { bg: string, text: string, dot: string, timeline: string }> = {
+    calm: { 
+        bg: 'bg-emerald-100 dark:bg-emerald-900/30', 
+        text: 'text-emerald-700 dark:text-emerald-400', 
+        dot: 'bg-emerald-400',
+        timeline: 'bg-emerald-400'
+    },
+    mildstress: { 
+        bg: 'bg-amber-100 dark:bg-amber-900/30', 
+        text: 'text-amber-700 dark:text-amber-400', 
+        dot: 'bg-amber-400',
+        timeline: 'bg-amber-400'
+    },
+    highstress: { 
+        bg: 'bg-rose-100 dark:bg-rose-900/30', 
+        text: 'text-rose-700 dark:text-rose-400', 
+        dot: 'bg-rose-500',
+        timeline: 'bg-rose-500'
+    },
+    distracted: { 
+        bg: 'bg-blue-100 dark:bg-blue-900/30', 
+        text: 'text-blue-700 dark:text-blue-400', 
+        dot: 'bg-blue-400',
+        timeline: 'bg-blue-400'
+    },
+    disengaged: { 
+        bg: 'bg-purple-100 dark:bg-purple-900/30', 
+        text: 'text-purple-700 dark:text-purple-400', 
+        dot: 'bg-purple-400',
+        timeline: 'bg-purple-400'
+    },
+    success: { 
+        bg: 'bg-emerald-500', 
+        text: 'text-white', 
+        dot: 'bg-emerald-500',
+        timeline: 'bg-emerald-500'
+    },
+    error: { 
+        bg: 'bg-rose-500', 
+        text: 'text-white', 
+        dot: 'bg-rose-500',
+        timeline: 'bg-rose-500'
+    },
+    adaptation: {
+        bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+        text: 'text-indigo-700 dark:text-indigo-400',
+        dot: 'bg-indigo-500',
+        timeline: 'bg-indigo-500'
+    },
+    other: { 
+        bg: 'bg-slate-100 dark:bg-slate-700', 
+        text: 'text-slate-600 dark:text-slate-300', 
+        dot: 'bg-slate-400',
+        timeline: 'bg-slate-400'
+    }
+};
+
 // ─── Helpers ───────────────────────────────────────────────────────
 function logBadgeStyle(category: string) {
-    switch (category) {
-        case 'calm':    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-        case 'stress':  return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-        case 'distracted': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-        case 'success': return 'bg-emerald-500 text-white';
-        case 'error':   return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
-        default:        return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
-    }
+    return STATE_COLORS[category]?.bg + ' ' + STATE_COLORS[category]?.text || 'bg-slate-100 text-slate-600';
 }
 
 function logDotColor(category: string) {
-    switch (category) {
-        case 'calm':    return 'bg-emerald-400';
-        case 'stress':  return 'bg-amber-400';
-        case 'distracted': return 'bg-blue-400';
-        case 'success': return 'bg-emerald-500';
-        case 'error':   return 'bg-rose-400';
-        default:        return 'bg-slate-400';
-    }
+    return STATE_COLORS[category]?.dot || 'bg-slate-400';
 }
 
 function engagementColor(level: string) {
@@ -134,11 +178,11 @@ const StudentAnalysis: React.FC = () => {
         : 0;
 
     const breakdownItems = breakdown ? [
-        { key: 'calm',       label: 'Calm',       color: 'bg-emerald-400', count: breakdown.calm },
-        { key: 'mildstress', label: 'Mild Stress', color: 'bg-amber-400',  count: breakdown.mildstress },
-        { key: 'highstress', label: 'High Stress', color: 'bg-red-500',    count: breakdown.highstress },
-        { key: 'distracted', label: 'Distracted',  color: 'bg-blue-400',   count: breakdown.distracted },
-        { key: 'disengaged', label: 'Disengaged',  color: 'bg-purple-400', count: breakdown.disengaged },
+        { key: 'calm',       label: 'Calm',       color: STATE_COLORS.calm.dot, count: breakdown.calm },
+        { key: 'mildstress', label: 'Mild Stress', color: STATE_COLORS.mildstress.dot,  count: breakdown.mildstress },
+        { key: 'highstress', label: 'High Stress', color: STATE_COLORS.highstress.dot,    count: breakdown.highstress },
+        { key: 'distracted', label: 'Distracted',  color: STATE_COLORS.distracted.dot,   count: breakdown.distracted },
+        { key: 'disengaged', label: 'Disengaged',  color: STATE_COLORS.disengaged.dot, count: breakdown.disengaged },
     ] : [];
 
     return (
@@ -360,19 +404,23 @@ const StudentAnalysis: React.FC = () => {
                                                 <div className="mb-2 flex items-center justify-between">
                                                     <h3 className="text-sm font-bold">Interaction Timeline (Latest Events)</h3>
                                                     <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
-                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span> State</div>
-                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Adaptation</div>
-                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> Success</div>
+                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> Calm</div>
+                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Mild Stress</div>
+                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500"></span> High Stress</div>
+                                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-500"></span> Adaptation</div>
                                                     </div>
                                                 </div>
                                                 <div className="h-14 flex rounded-xl overflow-hidden mb-2 shadow-inner border border-slate-100 dark:border-slate-800">
                                                     {studentDetails.logs.slice(0, 20).reverse().map((log) => {
-                                                        let color = 'bg-[#3b82f6]';
-                                                        if (log.stateCategory === 'success') color = 'bg-emerald-400';
-                                                        else if (log.stateCategory === 'error') color = 'bg-rose-400';
-                                                        else if (log.stateCategory === 'stress') color = 'bg-amber-400';
-                                                        else if (log.stateCategory === 'distracted') color = 'bg-blue-300';
-                                                        else if (log.description !== 'State update') color = 'bg-amber-400';
+                                                        let color = STATE_COLORS[log.stateCategory]?.timeline || STATE_COLORS.other.timeline;
+                                                        
+                                                        // Override for adaptations ONLY for calm/generic states
+                                                        // This ensures critical states (Stress, Success, Error) stay visible
+                                                        if (log.description !== 'State update' && 
+                                                           (log.stateCategory === 'calm' || log.stateCategory === 'other' || log.stateCategory === 'distracted')) {
+                                                            color = STATE_COLORS.adaptation.timeline;
+                                                        }
+
                                                         return (
                                                             <div
                                                                 key={log.id}
