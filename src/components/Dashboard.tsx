@@ -1,11 +1,32 @@
+import { useEffect } from 'react';
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, BookOpen, Calculator, Play, Flame, Trophy } from 'lucide-react';
+import { BookOpen, Calculator, Play, Flame, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { sensorBridge } from '../utils/tracking/SensorBridge';
+import { featureExtractor } from '../utils/tracking/FeatureExtractor';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
+    const { studentUser, studentSignOut } = useAuth();
+    // Derive display name — checks live context, then raw localStorage, then friendly fallback
+    const displayName = studentUser?.full_name || 'Explorer';
+
+    useEffect(() => {
+        // Start bridge for background adaptation logging
+        sensorBridge.start();
+        featureExtractor.start();
+
+        return () => {
+            sensorBridge.stop();
+            featureExtractor.stop();
+        };
+    }, []);
+
     return (
-        <div className="min-h-screen text-text-dark font-lexend transition-colors duration-300 overflow-x-hidden">
-            <div className="max-w-4xl mx-auto px-6 py-8 min-h-screen flex flex-col relative">
+        <div className="text-text-dark font-lexend transition-colors duration-300">
+            <div className="max-w-4xl mx-auto px-6 py-8 relative">
 
                 {/* Background Blobs */}
                 <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none" />
@@ -18,27 +39,42 @@ const Dashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group relative cursor-pointer"
                     >
-                        <div className="w-14 h-14 rounded-full border-4 border-white shadow-sm overflow-hidden bg-primary/30">
-                            {/* Placeholder Avatar */}
-                            <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                                alt="User Avatar"
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-14 h-14 rounded-full border-4 border-white shadow-sm overflow-hidden bg-primary/30 flex items-center justify-center">
+                            {studentUser?.avatar ? (
+                                <span className="text-3xl">{studentUser.avatar}</span>
+                            ) : (
+                                <img
+                                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+                                    alt="User Avatar"
+                                    className="w-full h-full object-cover"
+                                />
+                            )}
                         </div>
                     </motion.button>
 
                     <div className="text-center">
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white shadow-sm">
+                            <img src="/logo.png" alt="CLALI Logo" className="w-full h-full object-cover" />
+                        </div>
                         <h1 className="text-2xl font-black text-slate-400 uppercase tracking-widest">Clali</h1>
                     </div>
+                    </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-primary hover:bg-slate-50 shadow-sm transition-colors cursor-pointer"
-                    >
-                        <Settings size={24} />
-                    </motion.button>
+                    <div className="flex items-center gap-2">
+                        {studentUser && (
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => { studentSignOut(); navigate('/student-login'); }}
+                                className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 shadow-sm transition-colors cursor-pointer"
+                                title="Sign Out"
+                            >
+                                <LogOut size={20} />
+                            </motion.button>
+                        )}
+
+                    </div>
                 </header>
 
                 <main className="relative z-10 flex-grow flex flex-col gap-8">
@@ -51,7 +87,7 @@ const Dashboard = () => {
                             className="bg-white rounded-[2.5rem] p-8 shadow-card w-full max-w-2xl mx-auto relative z-0 flex items-center justify-between overflow-visible"
                         >
                             <div className="flex-1 pr-4">
-                                <h2 className="text-4xl md:text-5xl font-black text-slate-700 tracking-tight mb-2">Hi Student!</h2>
+                                <h2 className="text-4xl md:text-5xl font-black text-slate-700 tracking-tight mb-2">Hi {displayName}!</h2>
                                 <p className="text-lg text-slate-500 font-medium">Ready to play and learn?</p>
 
                                 <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-yellow-soft rounded-full shadow-sm border border-yellow-200">
@@ -72,52 +108,114 @@ const Dashboard = () => {
                     </section>
 
                     {/* Module Grid */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
-
-                        {/* Reading Card */}
-                        <ModuleCard
-                            title="Reading Time"
-                            subtitle="Let's explore stories!"
-                            icon={BookOpen}
-                            bgColor="bg-mint-soft"
-                            textColor="text-teal-900"
-                            iconColor="text-emerald-500"
-                            buttonColor="text-emerald-500"
-                        />
-
-                        {/* Math Card */}
-                        <ModuleCard
-                            title="Math Fun"
-                            subtitle="Solve challenges!"
-                            icon={Calculator}
-                            bgColor="bg-yellow-soft"
-                            textColor="text-amber-900"
-                            iconColor="text-amber-500"
-                            buttonColor="text-amber-500"
-                        />
-
-                        {/* Quick Play (Wide) */}
+                    <div className="grid grid-cols-1 mb-8 w-full max-w-4xl mx-auto">
                         <motion.button
                             whileHover={{ scale: 1.02, y: -5 }}
                             whileTap={{ scale: 0.98 }}
-                            className="col-span-1 md:col-span-2 group relative w-full h-48 rounded-[2rem] overflow-hidden bg-sky-soft shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            onClick={() => navigate('/story-demo')}
+                            className="group relative w-full h-48 rounded-[2rem] overflow-hidden shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)' }}
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/30 to-transparent pointer-events-none" />
-
-                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[50%]">
-                                <h3 className="text-3xl font-black text-blue-900 leading-tight mb-2">Quick Play</h3>
-                                <p className="text-lg font-bold text-blue-800/60">5-minute brain challenge!</p>
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent pointer-events-none" />
+                            {/* Floating decorative UI elements */}
+                            <div className="absolute top-4 right-24 opacity-15 pointer-events-none rotate-12">
+                                <span className="font-lexend text-white text-7xl font-bold tracking-tighter">📖</span>
+                            </div>
+                            <div className="absolute bottom-2 right-48 flex opacity-15 pointer-events-none -rotate-12">
+                                <span className="font-lexend text-white text-6xl font-bold tracking-tighter">🦉</span>
                             </div>
 
-                            <div className="relative z-10 flex items-center justify-center h-full pr-8">
-                                <Trophy size={100} className="text-blue-500 drop-shadow-xl opacity-80" strokeWidth={1.5} />
+                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
+                                <h3 className="text-4xl font-black text-white leading-tight mb-2 drop-shadow-sm font-lexend">The Broken Storybook</h3>
+                                <p className="text-lg font-bold text-white/80">Adaptive Story Experience</p>
                             </div>
 
-                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md group-hover:bg-blue-100 transition-colors">
-                                <Play className="text-blue-500 ml-1" size={24} fill="currentColor" />
+                            <div className="relative z-10 flex items-center justify-center h-full pr-4">
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)' }}>
+                                    <span className="material-symbols-outlined text-white text-5xl md:text-6xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>
+                                        auto_stories
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                                <Play className="text-white ml-1" size={24} fill="currentColor" />
                             </div>
                         </motion.button>
-                    </section>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
+
+                        {/* Workshop Game */}
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => navigate('/workshop')}
+                            className="col-span-1 md:col-span-1 group relative w-full h-48 rounded-[2rem] overflow-hidden shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            style={{ background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 50%, #4338CA 100%)' }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent pointer-events-none" />
+                            {/* Floating gear decorations */}
+                            <div className="absolute top-4 right-24 opacity-10 pointer-events-none">
+                                <span className="material-symbols-outlined text-white text-7xl" style={{ fontVariationSettings: "'FILL' 1" }}>settings</span>
+                            </div>
+                            <div className="absolute bottom-2 right-48 opacity-10 pointer-events-none rotate-45">
+                                <span className="material-symbols-outlined text-white text-5xl" style={{ fontVariationSettings: "'FILL' 1" }}>build</span>
+                            </div>
+
+                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
+                                <h3 className="text-3xl font-black text-white leading-tight mb-2">Mechanic Workshop</h3>
+                                <p className="text-base font-bold text-white/60">Fix gears, balance tires & more!</p>
+                            </div>
+
+                            <div className="relative z-10 flex items-center justify-center h-full pr-4">
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)' }}>
+                                    <span className="material-symbols-outlined text-white text-5xl md:text-6xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>
+                                        engineering
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                                <Play className="text-white ml-1" size={24} fill="currentColor" />
+                            </div>
+                        </motion.button>
+
+                        {/* Word Factory Game */}
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => navigate('/word-factory')}
+                            className="col-span-1 md:col-span-1 group relative w-full h-48 rounded-[2rem] overflow-hidden shadow-card flex items-center justify-between p-8 px-10 cursor-pointer"
+                            style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #B45309 100%)' }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent pointer-events-none" />
+                            {/* Floating letter decorations */}
+                            <div className="absolute top-4 right-24 opacity-15 pointer-events-none rotate-12">
+                                <span className="font-black text-white text-7xl tracking-tighter">A</span>
+                            </div>
+                            <div className="absolute bottom-2 right-48 opacity-15 pointer-events-none -rotate-12">
+                                <span className="font-black text-white text-6xl tracking-tighter">B</span>
+                            </div>
+
+                            <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
+                                <h3 className="text-3xl font-black text-white leading-tight mb-2">Word Factory</h3>
+                                <p className="text-base font-bold text-white/60">Drag & drop letters to spell!</p>
+                            </div>
+
+                            <div className="relative z-10 flex items-center justify-center h-full pr-4">
+                                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)' }}>
+                                    <span className="material-symbols-outlined text-white text-5xl md:text-6xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}>
+                                        sort_by_alpha
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md group-hover:bg-white/30 transition-colors backdrop-blur-sm">
+                                <Play className="text-white ml-1" size={24} fill="currentColor" />
+                            </div>
+                        </motion.button>
+                    </div>
 
                     {/* Stats Row - Glassmorphic Cards */}
                     <section className="mt-4 w-full max-w-2xl mx-auto">
@@ -128,7 +226,6 @@ const Dashboard = () => {
                             <StatItem icon={Flame} value="3" label="Days" color="orange" bgColor="bg-orange-100" />
                         </div>
                     </section>
-
                 </main>
             </div>
         </div>
@@ -136,40 +233,6 @@ const Dashboard = () => {
 };
 
 // Sub-components for cleaner file
-
-interface ModuleCardProps {
-    title: string;
-    subtitle: string;
-    icon: ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
-    bgColor: string;
-    textColor: string;
-    iconColor: string;
-    buttonColor: string;
-}
-
-const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, textColor, iconColor, buttonColor }: ModuleCardProps) => (
-    <motion.button
-        whileHover={{ scale: 1.02, y: -5 }}
-        whileTap={{ scale: 0.98 }}
-        className={`group relative w-full h-64 rounded-[2rem] overflow-hidden ${bgColor} shadow-card hover:shadow-float flex flex-col justify-between p-6 cursor-pointer border-4 border-transparent hover:border-white/50 transition-all`}
-    >
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent pointer-events-none" />
-
-        <div className="relative z-10 flex justify-center items-center h-2/3">
-            <Icon size={120} className={`${iconColor} drop-shadow-md opacity-80 group-hover:scale-110 transition-transform duration-300`} strokeWidth={1.5} />
-        </div>
-
-        <div className="relative z-10 flex items-end justify-between w-full mt-2">
-            <div className="text-left">
-                <h3 className={`text-2xl font-black ${textColor} leading-tight`}>{title}</h3>
-                <p className={`text-sm font-bold ${textColor} opacity-70 mt-1`}>{subtitle}</p>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md group-hover:bg-white/80 transition-colors shadow-pop group-hover:shadow-none group-hover:translate-y-[2px]">
-                <Play className={`${buttonColor} ml-1`} size={24} fill="currentColor" />
-            </div>
-        </div>
-    </motion.button>
-);
 
 interface StatItemProps {
     icon: ComponentType<{ size?: number; className?: string }>;

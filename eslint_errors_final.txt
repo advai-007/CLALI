@@ -1,0 +1,85 @@
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\public\faceTracking.worker.js[24m[0m
+[0m  [2m1:1[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'no-undef')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel2.tsx[24m[0m
+[0m   [2m97:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m112:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel4.tsx[24m[0m
+[0m   [2m92:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m107:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel5.tsx[24m[0m
+[0m   [2m39:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')[0m
+[0m  [2m121:25[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\BoltTightening.tsx[24m[0m
+[0m  [2m80:13[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m93:13[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\FuelMixMonitor.tsx[24m[0m
+[0m   [2m34:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m105:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\GearboxStation.tsx[24m[0m
+[0m  [2m154:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m169:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\TireBalanceBay.tsx[24m[0m
+[0m   [2m36:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m110:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m120:13[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\WiringPanel.tsx[24m[0m
+[0m   [2m38:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m106:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m119:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m217:36[22m  [31merror[39m    Error: Cannot access refs during render[0m
+[0m[0m
+[0mReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\WiringPanel.tsx:217:36[0m
+[0m  215 |                         </defs>[0m
+[0m  216 |                         {/* Connected wires */}[0m
+[0m> 217 |                         {WIRES.map((wire) => {[0m
+[0m      |                                    ^^^^^^^^^^^[0m
+[0m> 218 |                             if (!connections[wire.id]) return null;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 219 |                             // eslint-disable-next-line react-hooks/refs[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 227 |                             );[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 228 |                         })}[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render[0m
+[0m  229 |                         {/* Active drag wire */}[0m
+[0m  230 |                         {activeDrag && (() => {[0m
+[0m  231 |                             // eslint-disable-next-line react-hooks/refs  [2mreact-hooks/refs[22m[0m
+[0m  [2m219:29[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/refs')[0m
+[0m  [2m230:41[22m  [31merror[39m    Error: Cannot access refs during render[0m
+[0m[0m
+[0mReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\WiringPanel.tsx:230:41[0m
+[0m  228 |                         })}[0m
+[0m  229 |                         {/* Active drag wire */}[0m
+[0m> 230 |                         {activeDrag && (() => {[0m
+[0m      |                                         ^^^^^^^[0m
+[0m> 231 |                             // eslint-disable-next-line react-hooks/refs[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 232 |                             const line = getDragLine();[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 240 |                             );[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 241 |                         })()}[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^ This function accesses a ref value[0m
+[0m  242 |                     </svg>[0m
+[0m  243 |[0m
+[0m  244 |                     {/* Board Content */}                                                                                                      [2mreact-hooks/refs[22m[0m
+[0m  [2m231:29[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/refs')[0m
+[0m[0m
+[0m[31m[1m✖ 23 problems (2 errors, 21 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[31m[1m  0 errors and 21 warnings potentially fixable with the `--fix` option.[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

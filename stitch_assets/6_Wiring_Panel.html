@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wiring Panel - Play-Plastic Workshop</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4DA6FF", // Sky Blue
+                        "background-light": "#E5E7EB", // Base Grey
+                        "background-dark": "#101922",
+                        "toy-red": "#FF5C5C",
+                        "toy-yellow": "#FFD93D",
+                        "toy-green": "#4ADE80",
+                        "plastic-dark": "#4B5563",
+                        "surface-wood": "#FDBA74",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem",
+                        "3xl": "3rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'plastic-up': 'inset 0 2px 4px rgba(255,255,255,0.6), 0 4px 0 rgba(0,0,0,0.1)',
+                        'plastic-down': 'inset 0 4px 8px rgba(0,0,0,0.25)',
+                        'plastic-card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'socket-glow': '0 0 15px 2px currentColor',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Spline Sans', sans-serif;
+            overflow: hidden; /* Prevent scrolling during drag */
+        }
+        
+        .plastic-text-shadow {
+            text-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+        /* Custom Wire Animation for the example visualization */
+        @keyframes pulse-wire {
+            0% { stroke-opacity: 0.6; stroke-width: 8; }
+            50% { stroke-opacity: 1; stroke-width: 10; }
+            100% { stroke-opacity: 0.6; stroke-width: 8; }
+        }
+
+        .animate-wire-pulse {
+            animation: pulse-wire 2s infinite ease-in-out;
+        }
+
+        /* Spark Animation */
+        @keyframes spark {
+            0% { transform: scale(0); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .spark-effect {
+            animation: spark 0.4s ease-out forwards;
+        }
+        
+        .cursor-grab {
+            cursor: grab;
+        }
+        .cursor-grabbing {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="bg-background-light min-h-screen flex flex-col relative select-none">
+<!-- Top Navigation HUD -->
+<header class="w-full px-6 py-4 fixed top-0 left-0 z-50">
+<div class="max-w-5xl mx-auto">
+<div class="bg-white rounded-2xl shadow-plastic-card flex items-center justify-between px-6 py-3 border-b-4 border-gray-100">
+<!-- Back Button -->
+<button class="group flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-plastic-dark px-4 py-2 rounded-xl transition-all shadow-plastic-up active:translate-y-1 active:shadow-none">
+<span class="material-symbols-outlined text-2xl font-bold">arrow_back</span>
+<span class="font-bold text-lg hidden sm:block">Garage</span>
+</button>
+<!-- Title -->
+<div class="flex flex-col items-center">
+<h1 class="text-2xl font-bold text-plastic-dark tracking-tight plastic-text-shadow uppercase">Wiring Panel</h1>
+<div class="flex gap-1 mt-1">
+<div class="w-2 h-2 rounded-full bg-toy-green"></div>
+<div class="w-2 h-2 rounded-full bg-gray-300"></div>
+<div class="w-2 h-2 rounded-full bg-gray-300"></div>
+</div>
+</div>
+<!-- Star Count -->
+<div class="flex items-center gap-2 bg-toy-yellow/20 px-4 py-2 rounded-xl border-2 border-toy-yellow/30">
+<span class="material-symbols-outlined text-toy-yellow text-3xl drop-shadow-sm fill-1">star</span>
+<span class="text-xl font-bold text-yellow-600">0/3</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Game Area -->
+<main class="flex-grow flex items-center justify-center p-4 pt-24 relative overflow-hidden">
+<!-- Background Decor: Workbench texture suggestion -->
+<div class="absolute inset-0 z-0 opacity-30 pointer-events-none" style="background-image: radial-gradient(#cbd5e1 2px, transparent 2px); background-size: 32px 32px;"></div>
+<!-- The Circuit Board Container -->
+<div class="relative w-full max-w-4xl bg-plastic-dark rounded-3xl p-8 md:p-12 shadow-2xl border-b-8 border-gray-800 z-10 mx-auto">
+<!-- Screw Heads (Decor) -->
+<div class="absolute top-4 left-4 w-6 h-6 rounded-full bg-gray-400 shadow-inner flex items-center justify-center border border-gray-500"><div class="w-4 h-1 bg-gray-300 rotate-45 rounded-full shadow-sm"></div></div>
+<div class="absolute top-4 right-4 w-6 h-6 rounded-full bg-gray-400 shadow-inner flex items-center justify-center border border-gray-500"><div class="w-4 h-1 bg-gray-300 -rotate-45 rounded-full shadow-sm"></div></div>
+<div class="absolute bottom-4 left-4 w-6 h-6 rounded-full bg-gray-400 shadow-inner flex items-center justify-center border border-gray-500"><div class="w-4 h-1 bg-gray-300 -rotate-45 rounded-full shadow-sm"></div></div>
+<div class="absolute bottom-4 right-4 w-6 h-6 rounded-full bg-gray-400 shadow-inner flex items-center justify-center border border-gray-500"><div class="w-4 h-1 bg-gray-300 rotate-45 rounded-full shadow-sm"></div></div>
+<!-- Board Content Grid -->
+<div class="flex flex-col md:flex-row justify-between items-center h-full gap-8 relative z-20">
+<!-- Left Column: Source Sockets -->
+<div class="flex flex-col gap-12 w-full md:w-auto items-center md:items-start z-30">
+<!-- Socket A: Red -->
+<div class="group relative flex items-center gap-4">
+<div class="relative w-24 h-24 rounded-full bg-gray-800 shadow-plastic-down border-8 border-toy-red flex items-center justify-center cursor-grab active:scale-95 transition-transform">
+<!-- Port Inner Visuals -->
+<div class="w-12 h-12 bg-black/40 rounded-full shadow-inner flex items-center justify-center">
+<span class="material-symbols-outlined text-toy-red opacity-50 text-3xl">bolt</span>
+</div>
+<!-- Connector Nub -->
+<div class="absolute -right-3 w-4 h-8 bg-toy-red rounded-r-lg shadow-md hidden md:block"></div>
+</div>
+<span class="text-white/50 font-bold text-lg hidden md:block select-none">INPUT A</span>
+</div>
+<!-- Socket B: Blue -->
+<div class="group relative flex items-center gap-4">
+<div class="relative w-24 h-24 rounded-full bg-gray-800 shadow-plastic-down border-8 border-primary flex items-center justify-center cursor-grab active:scale-95 transition-transform">
+<!-- Port Inner Visuals -->
+<div class="w-12 h-12 bg-black/40 rounded-full shadow-inner flex items-center justify-center">
+<span class="material-symbols-outlined text-primary opacity-50 text-3xl">bolt</span>
+</div>
+<div class="absolute -right-3 w-4 h-8 bg-primary rounded-r-lg shadow-md hidden md:block"></div>
+</div>
+<span class="text-white/50 font-bold text-lg hidden md:block select-none">INPUT B</span>
+</div>
+<!-- Socket C: Yellow -->
+<div class="group relative flex items-center gap-4">
+<!-- Active State Simulation: Ring glow -->
+<div class="relative w-24 h-24 rounded-full bg-gray-800 shadow-plastic-down border-8 border-toy-yellow flex items-center justify-center cursor-grab active:scale-95 transition-transform ring-4 ring-toy-yellow/30">
+<!-- Port Inner Visuals -->
+<div class="w-12 h-12 bg-black/40 rounded-full shadow-inner flex items-center justify-center">
+<span class="material-symbols-outlined text-toy-yellow opacity-50 text-3xl">bolt</span>
+</div>
+<div class="absolute -right-3 w-4 h-8 bg-toy-yellow rounded-r-lg shadow-md hidden md:block"></div>
+</div>
+<span class="text-white/50 font-bold text-lg hidden md:block select-none">INPUT C</span>
+</div>
+</div>
+<!-- Center Column: Spark Gap / Fuse Box -->
+<div class="flex-1 flex flex-col items-center justify-center w-full h-full min-h-[200px] relative pointer-events-none">
+<!-- SVG Overlay for Wires (Absolute positioning to cover the board) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-10" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<filter height="140%" id="glow-red" width="140%" x="-20%" y="-20%">
+<fegaussianblur result="blur" stddeviation="4"></fegaussianblur>
+<fecomposite in="SourceGraphic" in2="blur" operator="over"></fecomposite>
+</filter>
+</defs>
+<!-- Simulated Connected Wire (Blue -> Blue) -->
+<path class="opacity-80" d="M 100,225 C 250,225 250,90 450,90" fill="none" filter="url(#glow-red)" stroke="#4DA6FF" stroke-linecap="round" stroke-width="12"></path>
+<!-- Inner highlight for volume -->
+<path class="opacity-80" d="M 100,225 C 250,225 250,90 450,90" fill="none" stroke="rgba(255,255,255,0.4)" stroke-linecap="round" stroke-width="4"></path>
+<!-- Simulated User Dragging Wire (Yellow -> Mouse Cursor) -->
+<!-- This path would be dynamic in JS -->
+<path class="drop-shadow-lg" d="M 100,360 C 200,360 250,300 320,320" fill="none" stroke="#FFD93D" stroke-linecap="round" stroke-width="12"></path>
+<circle cx="320" cy="320" fill="#FFD93D" r="12" stroke="white" stroke-width="3"></circle>
+</svg>
+<!-- Central Fuse Component -->
+<div class="relative bg-gray-900 rounded-xl p-4 border border-gray-700 shadow-inner w-32 md:w-48 flex flex-col items-center gap-4 z-0">
+<span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Fuse Box</span>
+<!-- Glass Tube -->
+<div class="w-8 md:w-12 h-32 md:h-48 bg-white/10 rounded-full border-2 border-white/20 relative overflow-hidden backdrop-blur-sm shadow-inner">
+<!-- Metal Caps -->
+<div class="absolute top-0 w-full h-6 bg-gradient-to-b from-gray-300 to-gray-500"></div>
+<div class="absolute bottom-0 w-full h-6 bg-gradient-to-t from-gray-300 to-gray-500"></div>
+<!-- Filament (Broken/Intact) -->
+<div class="absolute top-6 left-1/2 -translate-x-1/2 w-1 h-12 bg-gray-500 rounded-b-full"></div>
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-1 h-12 bg-gray-500 rounded-t-full"></div>
+<!-- Spark Effect (Hidden by default, shown for demo) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-yellow-400 rounded-full blur-md opacity-20 animate-pulse"></div>
+</div>
+<!-- Status LED -->
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"></div>
+<span class="text-[10px] text-red-400 font-bold uppercase">Fault</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Destination Sockets -->
+<div class="flex flex-col gap-12 w-full md:w-auto items-center md:items-end z-30">
+<!-- Socket 1: Blue (Target for Input B) -->
+<div class="group relative flex items-center gap-4 flex-row-reverse">
+<!-- Connected State Visual -->
+<div class="relative w-24 h-24 rounded-full bg-gray-800 shadow-plastic-down border-8 border-primary flex items-center justify-center ring-4 ring-primary/50 shadow-[0_0_30px_rgba(77,166,255,0.4)]">
+<!-- Port Inner Visuals -->
+<div class="w-12 h-12 bg-primary/20 rounded-full shadow-inner flex items-center justify-center border-2 border-primary/30">
+<span class="material-symbols-outlined text-primary text-4xl animate-pulse">check</span>
+</div>
+<div class="absolute -left-3 w-4 h-8 bg-primary rounded-l-lg shadow-md hidden md:block"></div>
+</div>
+<span class="text-white/50 font-bold text-lg hidden md:block select-none">PORT 1</span>
+</div>
+<!-- Socket 2: Yellow (Target for Input C) -->
+<!-- Guided Mode: Pulsing to hint this is the target for the currently dragged yellow wire -->
+<div class="group relative flex items-center gap-4 flex-row-reverse">
+<div class="relative w-24 h-24 rounded-full bg-gray-800 shadow-plastic-down border-8 border-toy-yellow flex items-center justify-center ring-4 ring-toy-yellow shadow-[0_0_40px_rgba(255,217,61,0.6)] animate-pulse scale-105 transition-all duration-300">
+<!-- Port Inner Visuals -->
+<div class="w-12 h-12 bg-black/40 rounded-full shadow-inner flex items-center justify-center">
+<!-- Ghost icon to hint -->
+<span class="material-symbols-outlined text-toy-yellow opacity-80 text-3xl">bolt</span>
+</div>
+<div class="absolute -left-3 w-4 h-8 bg-toy-yellow rounded-l-lg shadow-md hidden md:block"></div>
+</div>
+<span class="text-white/50 font-bold text-lg hidden md:block select-none text-toy-yellow">PORT 2</span>
+</div>
+<!-- Socket 3: Red (Target for Input A) -->
+<div class="group relative flex items-center gap-4 flex-row-reverse">
+<div class="relative w-24 h-24 rounded-full bg-gray-800 shadow-plastic-down border-8 border-toy-red flex items-center justify-center">
+<!-- Port Inner Visuals -->
+<div class="w-12 h-12 bg-black/40 rounded-full shadow-inner flex items-center justify-center">
+<span class="material-symbols-outlined text-toy-red opacity-50 text-3xl">bolt</span>
+</div>
+<div class="absolute -left-3 w-4 h-8 bg-toy-red rounded-l-lg shadow-md hidden md:block"></div>
+</div>
+<span class="text-white/50 font-bold text-lg hidden md:block select-none">PORT 3</span>
+</div>
+</div>
+</div>
+<!-- Bottom Label -->
+<div class="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+<p class="text-gray-500 font-bold text-sm uppercase tracking-widest opacity-40">Main Circuit Board v2.0</p>
+</div>
+</div>
+<!-- Instructional Toast / Hint -->
+<div class="absolute bottom-8 z-40 animate-bounce">
+<div class="bg-white px-6 py-3 rounded-2xl shadow-xl border-b-4 border-gray-200 flex items-center gap-3">
+<span class="material-symbols-outlined text-toy-yellow text-3xl">lightbulb</span>
+<p class="text-plastic-dark font-bold">Connect the yellow wire to the glowing yellow port!</p>
+</div>
+</div>
+</main>
+<!-- Modal for victory (Hidden by default, shown structure for context) -->
+<!-- 
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border-b-8 border-gray-100 transform scale-100">
+            <div class="flex justify-center -mt-16 mb-4">
+                <div class="bg-toy-green text-white p-4 rounded-full shadow-lg border-4 border-white">
+                    <span class="material-symbols-outlined text-5xl">check_circle</span>
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-plastic-dark mb-2">Great Job!</h2>
+            <p class="text-gray-500 mb-6 font-medium">System fully operational.</p>
+            <div class="flex flex-col gap-3">
+                <button class="bg-toy-green text-white font-bold py-4 px-6 rounded-xl shadow-plastic-up hover:brightness-105 active:translate-y-1 active:shadow-none transition-all w-full flex items-center justify-center gap-2">
+                    <span>Next Job</span>
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+    </div> 
+    -->
+</body></html>

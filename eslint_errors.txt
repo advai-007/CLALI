@@ -1,0 +1,205 @@
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\public\faceTracking.worker.js[24m[0m
+[0m  [2m1:1[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'no-undef')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel2.tsx[24m[0m
+[0m   [2m97:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m112:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel4.tsx[24m[0m
+[0m   [2m92:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m107:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel5.tsx[24m[0m
+[0m   [2m40:9[22m   [31merror[39m    Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\reading\screens\WordFactoryLevel5.tsx:40:9[0m
+[0m  38 |     useEffect(() => {[0m
+[0m  39 |         setCurrentLevel(5);[0m
+[0m> 40 |         setPlacedParts(new Array(task.parts.length).fill(null));[0m
+[0m     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  41 |         monitor.startTrackingTask();[0m
+[0m  42 |         return () => monitor.stopTracking();[0m
+[0m  43 |     }, [currentTaskIdx, task.parts.length, monitor, setCurrentLevel]);  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m  [2m119:25[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\BoltTightening.tsx[24m[0m
+[0m   [2m80:13[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m   [2m93:13[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m110:40[22m  [31merror[39m    Compilation Skipped: Existing memoization could not be preserved[0m
+[0m[0m
+[0mReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `taskStartTime`, but the source dependencies were [errorCount, adaptiveState, completeStation]. Inferred different dependency than source.[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\BoltTightening.tsx:110:40[0m
+[0m  108 |     }, [sequence, currentStep, completedBolts, monitor, sendAdaptive, showFeedback, adaptiveState]);[0m
+[0m  109 |[0m
+[0m> 110 |     const handleComplete = useCallback(() => {[0m
+[0m      |                                        ^^^^^^^[0m
+[0m> 111 |         const duration = Date.now() - taskStartTime;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 112 |         const stars = errorCount === 0 ? 3 : errorCount <= 2 ? 2 : 1;[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 119 |         });[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 120 |     }, [errorCount, adaptiveState, completeStation]);[0m
+[0m      | ^^^^^^ Could not preserve existing manual memoization[0m
+[0m  121 |[0m
+[0m  122 |     // Bolt positions arranged in a circle/pattern on the "engine block"[0m
+[0m  123 |     const boltPositions = useMemo(() => {  [2mreact-hooks/preserve-manual-memoization[22m[0m
+[0m  [2m120:8[22m   [33mwarning[39m  React Hook useCallback has a missing dependency: 'taskStartTime'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\FuelMixMonitor.tsx[24m[0m
+[0m   [2m34:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m105:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m120:40[22m  [31merror[39m    Compilation Skipped: Existing memoization could not be preserved[0m
+[0m[0m
+[0mReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `taskStartTime`, but the source dependencies were [errorCount, adaptiveState, completeStation]. Inferred different dependency than source.[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\FuelMixMonitor.tsx:120:40[0m
+[0m  118 |     }, [showFeedback]);[0m
+[0m  119 |[0m
+[0m> 120 |     const handleComplete = useCallback(() => {[0m
+[0m      |                                        ^^^^^^^[0m
+[0m> 121 |         const duration = Date.now() - taskStartTime;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 122 |         const stars = errorCount === 0 ? 3 : errorCount <= 2 ? 2 : 1;[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 129 |         });[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 130 |     }, [errorCount, adaptiveState, completeStation]);[0m
+[0m      | ^^^^^^ Could not preserve existing manual memoization[0m
+[0m  131 |[0m
+[0m  132 |     const liquidPercent = Math.min((currentLevel / MAX_LEVEL) * 100, 100);[0m
+[0m  133 |  [2mreact-hooks/preserve-manual-memoization[22m[0m
+[0m  [2m130:8[22m   [33mwarning[39m  React Hook useCallback has a missing dependency: 'taskStartTime'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\GearboxStation.tsx[24m[0m
+[0m  [2m154:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m169:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m181:40[22m  [31merror[39m    Compilation Skipped: Existing memoization could not be preserved[0m
+[0m[0m
+[0mReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `taskStartTime`, but the source dependencies were [errorCount, adaptiveState, completeStation]. Inferred different dependency than source.[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\GearboxStation.tsx:181:40[0m
+[0m  179 |     );[0m
+[0m  180 |[0m
+[0m> 181 |     const handleComplete = useCallback(() => {[0m
+[0m      |                                        ^^^^^^^[0m
+[0m> 182 |         const duration = Date.now() - taskStartTime;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 183 |         const stars = errorCount === 0 ? 3 : errorCount <= 2 ? 2 : 1;[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 190 |         });[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 191 |     }, [errorCount, adaptiveState, completeStation]);[0m
+[0m      | ^^^^^^ Could not preserve existing manual memoization[0m
+[0m  192 |[0m
+[0m  193 |     return ([0m
+[0m  194 |         <div className="workshop-screen flex flex-col overflow-hidden relative" style={{ backgroundColor: 'rgba(77,166,255,0.2)', height: '100dvh' }}>  [2mreact-hooks/preserve-manual-memoization[22m[0m
+[0m  [2m191:8[22m   [33mwarning[39m  React Hook useCallback has a missing dependency: 'taskStartTime'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\TireBalanceBay.tsx[24m[0m
+[0m   [2m36:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m110:17[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m120:13[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m130:40[22m  [31merror[39m    Compilation Skipped: Existing memoization could not be preserved[0m
+[0m[0m
+[0mReact Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `taskStartTime`, but the source dependencies were [errorCount, adaptiveState, completeStation]. Inferred different dependency than source.[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\TireBalanceBay.tsx:130:40[0m
+[0m  128 |     );[0m
+[0m  129 |[0m
+[0m> 130 |     const handleComplete = useCallback(() => {[0m
+[0m      |                                        ^^^^^^^[0m
+[0m> 131 |         const duration = Date.now() - taskStartTime;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 132 |         const stars = errorCount === 0 ? 3 : errorCount <= 2 ? 2 : 1;[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 139 |         });[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 140 |     }, [errorCount, adaptiveState, completeStation]);[0m
+[0m      | ^^^^^^ Could not preserve existing manual memoization[0m
+[0m  141 |[0m
+[0m  142 |     return ([0m
+[0m  143 |         <div className="workshop-screen flex flex-col w-full overflow-hidden" style={{ backgroundColor: 'var(--ws-base-grey)', height: '100dvh' }}>  [2mreact-hooks/preserve-manual-memoization[22m[0m
+[0m  [2m140:8[22m   [33mwarning[39m  React Hook useCallback has a missing dependency: 'taskStartTime'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\games\workshop\screens\WiringPanel.tsx[24m[0m
+[0m   [2m38:9[22m   [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m106:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m119:21[22m  [33mwarning[39m  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')[0m
+[0m  [2m146:8[22m   [33mwarning[39m  React Hook useCallback has a missing dependency: 'taskStartTime'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m217:36[22m  [31merror[39m    Error: Cannot access refs during render[0m
+[0m[0m
+[0mReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\WiringPanel.tsx:217:36[0m
+[0m  215 |                         </defs>[0m
+[0m  216 |                         {/* Connected wires */}[0m
+[0m> 217 |                         {WIRES.map((wire) => {[0m
+[0m      |                                    ^^^^^^^^^^^[0m
+[0m> 218 |                             if (!connections[wire.id]) return null;[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 219 |                             const line = getSvgLine(wire.id, wire.id);[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 226 |                             );[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 227 |                         })}[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render[0m
+[0m  228 |                         {/* Active drag wire */}[0m
+[0m  229 |                         {activeDrag && (() => {[0m
+[0m  230 |                             const line = getDragLine();  [2mreact-hooks/refs[22m[0m
+[0m  [2m229:41[22m  [31merror[39m    Error: Cannot access refs during render[0m
+[0m[0m
+[0mReact refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\games\workshop\screens\WiringPanel.tsx:229:41[0m
+[0m  227 |                         })}[0m
+[0m  228 |                         {/* Active drag wire */}[0m
+[0m> 229 |                         {activeDrag && (() => {[0m
+[0m      |                                         ^^^^^^^[0m
+[0m> 230 |                             const line = getDragLine();[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 231 |                             const wire = WIRES.find((w) => w.id === activeDrag);[0m
+[0m      …[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 238 |                             );[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 239 |                         })()}[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^ This function accesses a ref value[0m
+[0m  240 |                     </svg>[0m
+[0m  241 |[0m
+[0m  242 |                     {/* Board Content */}                                                                                                                              [2mreact-hooks/refs[22m[0m
+[0m[0m
+[0m[4mC:\Mini Project\CLALI\src\hooks\useAdaptation.ts[24m[0m
+[0m  [2m105:13[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0mC:\Mini Project\CLALI\src\hooks\useAdaptation.ts:105:13[0m
+[0m  103 |             sensorBridge.start();[0m
+[0m  104 |             featureExtractor.start();[0m
+[0m> 105 |             setIsActive(true);[0m
+[0m      |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  106 |         }[0m
+[0m  107 |[0m
+[0m  108 |         return () => {  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[31m[1m✖ 31 problems (8 errors, 23 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[31m[1m  0 errors and 18 warnings potentially fixable with the `--fix` option.[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

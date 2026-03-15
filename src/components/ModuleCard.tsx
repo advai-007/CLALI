@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import type { ElementType } from 'react';
+
 interface ModuleCardProps {
     title: string;
-    icon: any;
+    icon: ElementType;
     color: string;
     gradient: string;
     shadow: string;
