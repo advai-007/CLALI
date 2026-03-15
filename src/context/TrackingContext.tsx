@@ -10,15 +10,31 @@ export interface TrackingBaseline {
 interface TrackingContextType {
     baseline: TrackingBaseline | null;
     setBaseline: (baseline: TrackingBaseline | null) => void;
+    isTrackingEnabled: boolean;
+    setIsTrackingEnabled: (enabled: boolean) => void;
 }
 
 const TrackingContext = createContext<TrackingContextType | undefined>(undefined);
 
 export function TrackingProvider({ children }: { children: ReactNode }) {
     const [baseline, setBaseline] = useState<TrackingBaseline | null>(null);
+    const [isTrackingEnabled, setIsTrackingEnabled] = useState(() => {
+        const saved = localStorage.getItem('faceTrackingEnabled');
+        return saved === null ? true : saved === 'true';
+    });
+
+    const updateEnablement = (enabled: boolean) => {
+        setIsTrackingEnabled(enabled);
+        localStorage.setItem('faceTrackingEnabled', String(enabled));
+    };
 
     return (
-        <TrackingContext.Provider value={{ baseline, setBaseline }}>
+        <TrackingContext.Provider value={{ 
+            baseline, 
+            setBaseline, 
+            isTrackingEnabled, 
+            setIsTrackingEnabled: updateEnablement 
+        }}>
             {children}
         </TrackingContext.Provider>
     );

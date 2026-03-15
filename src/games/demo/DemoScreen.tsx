@@ -20,14 +20,16 @@ export default function DemoScreen() {
     const totalScenes = Object.keys(storyData).length;
     const currentIndex = Object.keys(storyData).indexOf(currentSceneId) + 1;
 
-    const { baseline } = useTrackingContext();
+    const { baseline, isTrackingEnabled } = useTrackingContext();
     const { studentUser } = useAuth();
     const faceTracking = useFaceTracking(videoRef);
 
     useEffect(() => {
-        faceTracking.initializeTracker();
+        if (isTrackingEnabled) {
+            faceTracking.initializeTracker();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isTrackingEnabled]);
 
     const adaptationSignals = useAdaptation({
         faceMetrics: faceTracking.metrics,

@@ -47,13 +47,15 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
         error: faceError
     } = useFaceTracking(videoRef);
 
-    useEffect(() => {
-        initializeTracker();
-    }, [initializeTracker]);
-
     // Pick up the CalibrationContext baseline (set during the manual calib flow).
     // If no manual baseline exists, SignalNormalizer will self-calibrate automatically.
-    const { baseline: trackingBaseline } = useTrackingContext();
+    const { baseline: trackingBaseline, isTrackingEnabled } = useTrackingContext();
+
+    useEffect(() => {
+        if (isTrackingEnabled) {
+            initializeTracker();
+        }
+    }, [initializeTracker, isTrackingEnabled]);
 
     // 2. Feed face metrics + baseline into Adaptation engine (Face + Device signals)
     const { studentUser } = useAuth();

@@ -7,7 +7,7 @@ import { DebugOverlay } from './DebugOverlay';
 export function CalibrationModule({ onCalibrationComplete }: { onCalibrationComplete?: () => void }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const { initializeTracker, stopTracking, isInitializing, isTracking, metrics, landmarks, error } = useFaceTracking(videoRef);
-    const { setBaseline } = useTrackingContext();
+    const { setBaseline, setIsTrackingEnabled } = useTrackingContext();
 
     const [calibrationState, setCalibrationState] = useState<'idle' | 'calibrating' | 'done'>('idle');
     const [progress, setProgress] = useState(0);
@@ -66,6 +66,15 @@ export function CalibrationModule({ onCalibrationComplete }: { onCalibrationComp
         };
 
         setBaseline(baseline);
+        setIsTrackingEnabled(true);
+        if (onCalibrationComplete) {
+            onCalibrationComplete();
+        }
+    };
+
+    const handleSkip = () => {
+        setBaseline(null);
+        setIsTrackingEnabled(false);
         if (onCalibrationComplete) {
             onCalibrationComplete();
         }
@@ -124,15 +133,27 @@ export function CalibrationModule({ onCalibrationComplete }: { onCalibrationComp
                     </div>
                 )}
 
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-4">
                     <button
                         onClick={startCalibration}
                         disabled={!isTracking || calibrationState === 'calibrating'}
-                        className="px-6 py-3 bg-stone-900 text-white rounded-xl font-medium shadow-sm hover:hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="w-full px-6 py-3 bg-stone-900 text-white rounded-xl font-medium shadow-sm hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
                     >
                         {calibrationState === 'idle' ? 'Start Calibration' :
                             calibrationState === 'calibrating' ? 'Calibrating...' : 'Recalibrate'}
                     </button>
+
+                    <button
+                        onClick={handleSkip}
+                        disabled={calibrationState === 'calibrating'}
+                        className="w-full px-6 py-3 bg-white text-stone-600 border border-stone-200 rounded-xl font-medium hover:bg-stone-50 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                        Continue without Face Tracking
+                    </button>
+
+                    <p className="text-[11px] text-stone-400 text-center leading-relaxed max-w-[280px]">
+                        Don't have a camera or prefer not to use it? You can still play! The system will use your mouse & touch patterns to adapt.
+                    </p>
                 </div>
             </div>
         </div>

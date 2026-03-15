@@ -42,15 +42,15 @@ const ReadingModule = () => {
 
     // Face tracking
     const videoRef = useRef<HTMLVideoElement>(null);
-    const { baseline } = useTrackingContext();
+    const { baseline, isTrackingEnabled } = useTrackingContext();
     const faceTracking = useFaceTracking(videoRef);
 
-    // Auto-start face tracking if baseline exists (user already calibrated)
+    // Auto-start face tracking if enabled
     useEffect(() => {
-        if (baseline && !faceTracking.isTracking && !faceTracking.isInitializing) {
+        if (isTrackingEnabled && !faceTracking.isTracking && !faceTracking.isInitializing) {
             faceTracking.initializeTracker();
         }
-    }, [baseline]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isTrackingEnabled, faceTracking.isTracking, faceTracking.isInitializing]);
 
     // Pass face metrics + baseline into the adaptation system
     const { studentUser } = useAuth();
