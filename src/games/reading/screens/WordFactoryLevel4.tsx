@@ -96,6 +96,15 @@ export default function WordFactoryLevel4() {
         return () => clearTimeout(timer);
     }, [currentTaskIdx, speakWord]);
 
+    // Adaptive Auto-speak: If the biometric machine enables read-aloud (e.g. stress detected)
+    // and we haven't placed the word yet, speak it again.
+    const { adaptationData } = useReading();
+    useEffect(() => {
+        if (adaptationData?.adaptations.enableReadAloud && !placedWord && !isSpeaking) {
+            speakWord();
+        }
+    }, [adaptationData?.adaptations.enableReadAloud, placedWord, isSpeaking, speakWord]);
+
     // Reset adaptation metrics when task changes
     useEffect(() => {
         resetAdaptation(`level4-${currentTaskIdx}`);

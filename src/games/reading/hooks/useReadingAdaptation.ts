@@ -1,24 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UseAdaptationReturn } from '../../../hooks/useAdaptation';
 
-/**
- * Assist levels — 4-stage graduated help system:
- * 0: Normal          — all choices, no hints
- * 1: Encourage       — Ollie gives a motivational message, no visual change
- * 2: Reduce          — fewer distractors shown (2-3 choices)
- * 3: Glow            — correct answer has a soft pulsing amber ring
- * 4: Reveal          — only correct answer shown, bright yellow glow
- */
 export type AssistLevel = 0 | 1 | 2 | 3 | 4;
 
-// Thresholds for the composite difficulty score (0-10)
 const THRESHOLDS: Record<AssistLevel, number> = {
     0: 0,
-    1: 2.5,   // Stage 1: Ollie encourages
-    2: 4.5,   // Stage 2: reduce choices
-    3: 6.5,   // Stage 3: soft glow on correct
-    4: 8.5,   // Stage 4: full reveal
+    1: 2.4,
+    2: 4.6,
+    3: 6.8,
+    4: 8.6,
 };
+
+const CHANGE_COOLDOWN_MS = 3000;
+const RECOVERY_STREAK_FOR_STEP_DOWN = 2;
 
 export function useReadingAdaptation(
     id: string,
@@ -27,45 +21,82 @@ export function useReadingAdaptation(
     const [assistLevel, setAssistLevel] = useState<AssistLevel>(0);
     const [difficultyScore, setDifficultyScore] = useState(0);
 
-    // --- Stable refs for all tracked values (so the interval never has stale closures) ---
-    const startTimeRef = useRef<number>(Date.now());
-    const lastInteractionRef = useRef<number>(Date.now());
-    const clicksRef = useRef<number>(0);
-    const errorsRef = useRef<number>(0);
-    const mouseDistanceRef = useRef<number>(0);
+    const startTimeRef = useRef(0);
+    const lastInteractionRef = useRef(0);
+    const firstActionAtRef = useRef<number | null>(null);
+    const clicksRef = useRef(0);
+    const errorsRef = useRef(0);
+    const mouseDistanceRef = useRef(0);
     const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
-    // Ref to adaptationData so the interval always reads the latest without re-creating
+    // Persists between tasks so the game adapts to the student, not just one question.
+    const studentSupportBaselineRef = useRef(0);
+    const taskPressureRef = useRef(0);
+    const quickSuccessStreakRef = useRef(0);
+    const recentSuccessRef = useRef(false);
+    const lastAssistChangeRef = useRef(0);
+    const assistLevelRef = useRef<AssistLevel>(0);
+
     const adaptationDataRef = useRef<UseAdaptationReturn | null>(adaptationData);
     useEffect(() => {
         adaptationDataRef.current = adaptationData;
     }, [adaptationData]);
 
-    // Ref to store current assistLevel for the ratchet comparison inside the interval
-    const assistLevelRef = useRef<AssistLevel>(0);
-
-    // Reset ALL state when the task (id) changes
     useEffect(() => {
-        startTimeRef.current = Date.now();
-        lastInteractionRef.current = Date.now();
+        const now = Date.now();
+        startTimeRef.current = now;
+        lastInteractionRef.current = now;
+        firstActionAtRef.current = null;
         clicksRef.current = 0;
         errorsRef.current = 0;
-        lastMousePosRef.current = null;
         mouseDistanceRef.current = 0;
-        assistLevelRef.current = 0;
-        setAssistLevel(0);
-        setDifficultyScore(0);
+        lastMousePosRef.current = null;
+        recentSuccessRef.current = false;
+
+        taskPressureRef.current = clampScore(studentSupportBaselineRef.current * 0.75);
+        const nextLevel = scoreToAssistLevel(taskPressureRef.current);
+        assistLevelRef.current = nextLevel;
+        lastAssistChangeRef.current = now;
+        setAssistLevel(nextLevel);
+        setDifficultyScore(roundScore(taskPressureRef.current));
     }, [id]);
 
-    // --- Tracking callbacks (all stable — only update refs) ---
     const trackClick = useCallback(() => {
+        const now = Date.now();
         clicksRef.current += 1;
-        lastInteractionRef.current = Date.now();
+        lastInteractionRef.current = now;
+        firstActionAtRef.current ??= now;
     }, []);
 
     const trackError = useCallback(() => {
+        const now = Date.now();
         errorsRef.current += 1;
-        lastInteractionRef.current = Date.now();
+        lastInteractionRef.current = now;
+        firstActionAtRef.current ??= now;
+        taskPressureRef.current = clampScore(
+            taskPressureRef.current + (errorsRef.current >= 2 ? 1.6 : 1.25)
+        );
+        studentSupportBaselineRef.current = clampScore(studentSupportBaselineRef.current + 0.45);
+        quickSuccessStreakRef.current = 0;
+        recentSuccessRef.current = false;
+    }, []);
+
+    const trackSuccess = useCallback(() => {
+        const now = Date.now();
+        const timeOnTaskSec = startTimeRef.current > 0 ? (now - startTimeRef.current) / 1000 : 0;
+        const efficientSuccess = errorsRef.current === 0 && timeOnTaskSec > 0 && timeOnTaskSec <= 8;
+
+        quickSuccessStreakRef.current = efficientSuccess
+            ? quickSuccessStreakRef.current + 1
+            : Math.max(0, quickSuccessStreakRef.current - 1);
+
+        taskPressureRef.current = clampScore(taskPressureRef.current - (efficientSuccess ? 1.35 : 0.8));
+        studentSupportBaselineRef.current = clampScore(
+            studentSupportBaselineRef.current - (quickSuccessStreakRef.current >= 2 ? 0.65 : 0.3)
+        );
+        recentSuccessRef.current = true;
+        lastInteractionRef.current = now;
+        firstActionAtRef.current ??= now;
     }, []);
 
     const trackMouseMove = useCallback((e: { clientX: number; clientY: number }) => {
@@ -78,74 +109,133 @@ export function useReadingAdaptation(
         lastInteractionRef.current = Date.now();
     }, []);
 
-    // --- Core evaluation loop — stable interval that reads everything from refs ---
     useEffect(() => {
-        const interval = setInterval(() => {
+        const interval = window.setInterval(() => {
             const now = Date.now();
+            if (startTimeRef.current === 0) {
+                startTimeRef.current = now;
+                lastInteractionRef.current = now;
+            }
+
             const timeOnTaskSec = (now - startTimeRef.current) / 1000;
             const idleTimeSec = (now - lastInteractionRef.current) / 1000;
+            const timeToFirstActionSec = firstActionAtRef.current === null
+                ? timeOnTaskSec
+                : (firstActionAtRef.current - startTimeRef.current) / 1000;
 
-            // Read latest sensor values directly from the ref (never stale)
             const data = adaptationDataRef.current;
-            const stressScore = data?.scores.stress ?? 0;   // 0-1
-            const focusScore = data?.scores.focus ?? 1;   // 0-1
-
-            // Device tap clusters from raw features
+            const stressScore = data?.scores.stress ?? 0;
+            const focusScore = data?.scores.focus ?? 1;
             const franticTaps = data?.rawFeatures?.franticTaps ?? 0;
+            const hasFaceData = data?.faceMetrics != null;
 
-            // --- Interaction signals ---
-            // Rapid clicking: > 2 clicks/sec is frantic (up to 1.5 pts)
+            const hesitationPenalty = firstActionAtRef.current === null
+                ? Math.min(2.4, Math.max(0, timeOnTaskSec - 5) * 0.3)
+                : timeToFirstActionSec > 6
+                    ? 0.45
+                    : 0;
+
+            const idlePenalty = firstActionAtRef.current !== null && idleTimeSec > 4
+                ? Math.min(2.3, 0.7 + (idleTimeSec - 4) * 0.22)
+                : 0;
+
+            const repeatedErrorsPenalty = Math.min(3.4, errorsRef.current * 1.2);
+
             const clickRate = timeOnTaskSec > 1 ? clicksRef.current / timeOnTaskSec : 0;
-            const clickJitter = Math.min(1.5, clickRate > 2 ? (clickRate - 2) * 0.5 : 0);
+            const franticPenalty = clickRate > 2.3
+                ? Math.min(1.2, (clickRate - 2.3) * 0.45)
+                : 0;
 
-            // Mouse jitter: > 1200 px/s (up to 1.0 pt)
-            const velocity = timeOnTaskSec > 0 ? mouseDistanceRef.current / timeOnTaskSec : 0;
-            const mouseJitter = Math.min(1.0, velocity > 1200 ? (velocity - 1200) / 2000 : 0);
+            const pointerVelocity = timeOnTaskSec > 0 ? mouseDistanceRef.current / timeOnTaskSec : 0;
+            const jitterPenalty = pointerVelocity > 1300
+                ? Math.min(0.8, (pointerVelocity - 1300) / 2500)
+                : 0;
 
-            // Device frantic taps (0-8+ → 0-1.0)
-            const franticTapBonus = Math.min(1.0, franticTaps / 8);
+            const sensorPenalty = Math.min(0.8, franticTaps / 6);
 
-            // Idle penalty: starts after 5s, accrues at 0.8 per 10s, capped at 2.0
-            const idleBonus = Math.min(2.0, idleTimeSec > 5 ? ((idleTimeSec - 5) / 10) * 0.8 : 0);
+            const faceModifier = !hasFaceData
+                ? 0
+                : (
+                    (stressScore >= 0.62 ? 0.75 : 0) +
+                    (focusScore <= 0.45 ? 0.9 : 0) -
+                    (stressScore < 0.28 && focusScore > 0.7 ? 0.35 : 0)
+                );
 
-            // --- Composite score (0-10) ---
-            // Note: errors weighted at 1.5 each so that WITHOUT sensor data,
-            // making 2 errors → ~3.0 (enough to trigger Stage 1 at 2.5)
-            const raw =
-                stressScore * 3.0 +           // face + device stress
-                (1 - focusScore) * 2.0 +      // face + device focus-loss
-                errorsRef.current * 1.5 +     // each error = 1.5 pts
-                idleBonus +                   // idle time (0-2)
-                clickJitter +                 // frantic clicks (0-1.5)
-                mouseJitter +                 // mouse velocity (0-1)
-                franticTapBonus;              // device taps (0-1)
+            const recoveryModifier = recentSuccessRef.current && idleTimeSec < 3 && errorsRef.current === 0
+                ? -0.5
+                : 0;
 
-            const clamped = Math.min(10, Math.max(0, raw));
-            setDifficultyScore(parseFloat(clamped.toFixed(2)));
+            const currentBehaviorScore = clampScore(
+                hesitationPenalty +
+                idlePenalty +
+                repeatedErrorsPenalty +
+                franticPenalty +
+                jitterPenalty +
+                sensorPenalty +
+                faceModifier +
+                recoveryModifier
+            );
 
-            // --- Ratchet: only escalate stage ---
-            let newLevel: AssistLevel = 0;
-            if (clamped >= THRESHOLDS[4]) newLevel = 4;
-            else if (clamped >= THRESHOLDS[3]) newLevel = 3;
-            else if (clamped >= THRESHOLDS[2]) newLevel = 2;
-            else if (clamped >= THRESHOLDS[1]) newLevel = 1;
+            const targetPressure = clampScore(
+                (studentSupportBaselineRef.current * 0.35) + currentBehaviorScore
+            );
 
-            const next = Math.max(assistLevelRef.current, newLevel) as AssistLevel;
-            if (next !== assistLevelRef.current) {
-                assistLevelRef.current = next;
-                setAssistLevel(next);
+            taskPressureRef.current = clampScore(
+                taskPressureRef.current + ((targetPressure - taskPressureRef.current) * 0.35)
+            );
+
+            const blendedScore = clampScore(
+                studentSupportBaselineRef.current + taskPressureRef.current
+            );
+
+            setDifficultyScore(roundScore(blendedScore));
+
+            const desiredLevel = scoreToAssistLevel(blendedScore);
+            const canChange = now - lastAssistChangeRef.current >= CHANGE_COOLDOWN_MS;
+            let nextLevel = assistLevelRef.current;
+
+            if (desiredLevel > assistLevelRef.current && canChange) {
+                nextLevel = desiredLevel;
+            } else if (
+                desiredLevel < assistLevelRef.current &&
+                canChange &&
+                quickSuccessStreakRef.current >= RECOVERY_STREAK_FOR_STEP_DOWN
+            ) {
+                nextLevel = Math.max(desiredLevel, (assistLevelRef.current - 1) as AssistLevel) as AssistLevel;
             }
-        }, 2000);
 
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Intentionally empty — everything is read from refs
+            if (nextLevel !== assistLevelRef.current) {
+                assistLevelRef.current = nextLevel;
+                lastAssistChangeRef.current = now;
+                setAssistLevel(nextLevel);
+            }
+        }, 1500);
+
+        return () => window.clearInterval(interval);
+    }, []);
 
     return {
         assistLevel,
         difficultyScore,
         trackClick,
         trackError,
+        trackSuccess,
         trackMouseMove,
     };
+}
+
+function scoreToAssistLevel(score: number): AssistLevel {
+    if (score >= THRESHOLDS[4]) return 4;
+    if (score >= THRESHOLDS[3]) return 3;
+    if (score >= THRESHOLDS[2]) return 2;
+    if (score >= THRESHOLDS[1]) return 1;
+    return 0;
+}
+
+function clampScore(score: number) {
+    return Math.min(10, Math.max(0, score));
+}
+
+function roundScore(score: number) {
+    return Number(score.toFixed(2));
 }

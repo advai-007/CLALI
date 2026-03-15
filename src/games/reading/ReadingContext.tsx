@@ -71,6 +71,7 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
         difficultyScore,
         trackClick,
         trackError,
+        trackSuccess,
         trackMouseMove
     } = useReadingAdaptation(taskId, adaptationData);
 
@@ -80,7 +81,7 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
     const STATE_HOLD_MS = 5000;
     const candidateRef = useRef<{ state: AdaptiveState; since: number }>({
         state: 'NORMAL' as AdaptiveState,
-        since: Date.now(),
+        since: 0,
     });
     const [adaptiveState, setAdaptiveState] = useState<AdaptiveState>('NORMAL' as AdaptiveState);
 
@@ -93,23 +94,39 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
         }
 
         const now = Date.now();
+        if (candidateRef.current.since === 0) {
+            candidateRef.current = { state: candidate, since: now };
+        }
         if (candidate !== candidateRef.current.state) {
             candidateRef.current = { state: candidate, since: now };
-        } else if (now - candidateRef.current.since >= STATE_HOLD_MS) {
-            setAdaptiveState(candidate);
+            return;
         }
-    }, [appAdaptiveState]);
+
+        if (now - candidateRef.current.since < STATE_HOLD_MS || adaptiveState === candidate) {
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            setAdaptiveState(candidate);
+        }, 0);
+
+        return () => window.clearTimeout(timeout);
+    }, [adaptiveState, appAdaptiveState]);
 
     const sendAdaptive = (event: { type: string; state?: AdaptiveState }) => {
         if (event.type === 'CORRECT_ACTION') {
+            trackSuccess();
             adaptationData?.registerGameEvent('correct');
         } else if (event.type === 'INCORRECT_ACTION') {
             adaptationData?.registerGameEvent('incorrect');
-            trackError();
         }
     };
 
     const addStars = (stars: number) => setTotalStars(prev => prev + stars);
+
+    // Derived flags from adaptation machine config
+    const adaptations = adaptationData.adaptations;
+    const fontFamily = adaptations.fontFamily === 'opendyslexic' ? 'font-opendyslexic' : 'font-lexend';
 
     return (
         <ReadingContext.Provider value={{
@@ -129,23 +146,26 @@ export function ReadingProvider({ children }: { children: ReactNode }) {
             showDebugPanel,
             setShowDebugPanel,
         }}>
-            {/* Hidden video element for MediaPipe face tracking */}
-            <video
-                ref={videoRef}
-                className="hidden"
-                playsInline
-                muted
-                autoPlay
-            />
+            <div className={`min-h-screen transition-all duration-700 ${fontFamily}`}>
 
-            {/* Optional debug warning if camera fails */}
-            {faceError && showDebugPanel && (
-                <div className="fixed top-20 left-4 z-50 bg-red-500 text-white p-2 rounded text-xs truncate max-w-xs">
-                    Camera Warning: {faceError}
-                </div>
-            )}
+                {/* Hidden video element for MediaPipe face tracking */}
+                <video
+                    ref={videoRef}
+                    className="hidden"
+                    playsInline
+                    muted
+                    autoPlay
+                />
 
-            {children}
+                {/* Optional debug warning if camera fails */}
+                {faceError && showDebugPanel && (
+                    <div className="fixed top-20 left-4 z-50 bg-red-500 text-white p-2 rounded text-xs truncate max-w-xs">
+                        Camera Warning: {faceError}
+                    </div>
+                )}
+
+                {children}
+            </div>
         </ReadingContext.Provider>
     );
 }

@@ -63,6 +63,9 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
         timeOnTask: 0,
     });
 
+    // Stable session ID for the lifetime of this hook mount (one game session)
+    const sessionIdRef = useRef<string>(crypto.randomUUID());
+
     // Store latest face metrics and baseline in refs so the subscription callback
     // always has access to the current values without re-subscribing
     const faceMetricsRef = useRef<FaceMetrics | null>(faceMetrics);
@@ -106,6 +109,22 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
         };
     }, [normalizer, send]);
 
+    // Derive the specific adaptation action applied from the current config
+    const deriveActionTaken = (adaptations: AdaptationConfig, state: string): string => {
+        const parts: string[] = [];
+        if (adaptations.showCalmingWidget) parts.push('CALMING_WIDGET');
+        if (adaptations.enableReadAloud) parts.push('AUTO_READ_ALOUD');
+        if (adaptations.fontFamily === 'opendyslexic') parts.push('DYSLEXIC_FONT_SUPPORT');
+        
+        if (state === 'highStress') parts.push('COGNITIVE_REINFORCEMENT');
+        if (state === 'distracted') parts.push('ATTENTION_LOCK');
+        
+        if (parts.length === 0) {
+            return state === 'calm' ? 'OPTIMAL_LAYOUT' : 'NONE';
+        }
+        return parts.join('+');
+    };
+
     // Handle logging of state changes
     useEffect(() => {
         const currentStateName = (typeof machineState.value === 'string'
@@ -115,15 +134,18 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
         // Log if state changed or if it's been more than 30 seconds since last log
         const now = Date.now();
         if (studentId && (currentStateName !== lastLoggedState.current || now - lastLogTime.current > 30000)) {
+            const actionTaken = deriveActionTaken(machineState.context.adaptations, currentStateName);
             studentMetricsApi.logAdaptationEvent(
                 studentId,
                 currentStateName.toUpperCase(),
-                machineState.context.adaptations.showCalmingWidget ? 'SHOW_CALMING_WIDGET' : 'NONE'
+                actionTaken,
+                sessionIdRef.current
             );
             lastLoggedState.current = currentStateName;
             lastLogTime.current = now;
         }
-    }, [machineState.value, machineState.context.adaptations.showCalmingWidget, studentId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [machineState.value, machineState.context.adaptations, studentId]);
 
     // Auto-start sensors
     useEffect(() => {
@@ -188,7 +210,8 @@ export function useAdaptation(options: UseAdaptationOptions = {}): UseAdaptation
                 studentMetricsApi.logAdaptationEvent(
                     studentId,
                     eventType === 'correct' ? 'SUCCESS' : 'ERROR',
-                    `GAME_EVENT_${eventType.toUpperCase()}`
+                    `GAME_EVENT_${eventType.toUpperCase()}`,
+                    sessionIdRef.current
                 );
             }
         },

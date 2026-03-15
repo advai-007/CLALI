@@ -8,7 +8,8 @@ export interface InteractionData {
     correctAnswer?: string;
     scrambledSentence?: string[];
     correctOrder?: string[];
-    sceneObjects?: string[];
+    sceneTargets?: string[];
+    sceneOptions?: string[];
     // Base layout config for the interaction panel
     layout?: 'row' | 'grid' | 'column';
 }
@@ -34,4 +35,5 @@ export interface InteractionLog {
     responseTime: number;
     errorCount: number;
     stressScore: number;
+    difficultyScore: number;
 }

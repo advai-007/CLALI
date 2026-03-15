@@ -20,8 +20,9 @@ export const storyData: Record<string, Scene> = {
         storyText: "Leo walked toward the river. Near the water he saw a small bird trapped in a net.",
         interactionType: 'sceneBuilder',
         interactionData: {
-            question: "Place what Leo saw!",
-            sceneObjects: ["Leo", "Bird", "River", "Net"],
+            question: "Build the scene Leo found.",
+            sceneTargets: ['Bird', 'River', 'Net'],
+            sceneOptions: ['Bird', 'River', 'Net', 'Rock', 'Fish'],
         },
         nextScene: 'c1_s3'
     },
@@ -81,8 +82,9 @@ export const storyData: Record<string, Scene> = {
         storyText: "Leo followed the sound and found a small rabbit near a bush. The rabbit looked worried.",
         interactionType: 'sceneBuilder',
         interactionData: {
-            question: "Build the scene Leo found:",
-            sceneObjects: ["Leo", "Rabbit", "Trees", "Bush"],
+            question: "Build the scene Leo found.",
+            sceneTargets: ['Rabbit', 'Bush', 'Trees'],
+            sceneOptions: ['Rabbit', 'Bush', 'Trees', 'Bird', 'River'],
         },
         nextScene: 'c2_s3'
     },

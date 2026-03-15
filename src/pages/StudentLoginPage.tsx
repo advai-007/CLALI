@@ -1,7 +1,7 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { School, ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { getClassByCode, getStudentsByClassId } from '../services/studentApi';
 import { SECRET_ICONS } from '../constants/emojiConstants';
 import type { ClassInfo, StudentInfo } from '../services/studentApi';
@@ -100,8 +100,8 @@ const StudentLoginPage = () => {
             {/* Header */}
             <header className="p-6 flex items-center justify-between">
                 <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                    <div className="size-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white">
-                        <School size={24} />
+                    <div className="size-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-slate-100">
+                        <img src="/logo.png" alt="CLALI Logo" className="w-full h-full object-cover" />
                     </div>
                     <span className="font-bold text-xl text-slate-800 dark:text-slate-100">CLALI</span>
                 </div>
@@ -153,7 +153,7 @@ const StudentLoginPage = () => {
                                     {loading ? (
                                         <><Loader2 className="w-6 h-6 animate-spin" /> Checking...</>
                                     ) : (
-                                        'Go to Class! 🚀'
+                                        'Go to Class! '
                                     )}
                                 </button>
                             </form>

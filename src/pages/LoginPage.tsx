@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, ArrowRight, School, Globe, Moon, Sun } from 'lucide-react';
+import { Mail, Lock, Eye, ArrowRight, Globe, Moon, Sun } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabase';
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const [role, setRole] = useState<'parent' | 'teacher'>('parent');
+    const [role] = useState<'teacher'>('teacher');
     const [showPassword, setShowPassword] = useState(false);
     const [isDark, setIsDark] = useState(false);
     const [email, setEmail] = useState('');
@@ -78,8 +78,8 @@ const LoginPage = () => {
                     onClick={() => navigate('/')}
                     className="flex items-center gap-3 text-slate-900 dark:text-slate-100 cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                    <div className="size-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white">
-                        <School size={24} />
+                    <div className="size-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-slate-100">
+                        <img src="/logo.png" alt="CLALI Logo" className="w-full h-full object-cover" />
                     </div>
                     <h2 className="text-xl font-bold leading-tight tracking-tight">CLALI</h2>
                 </div>
@@ -123,34 +123,11 @@ const LoginPage = () => {
                                 <p className="text-slate-500 dark:text-slate-400">Adaptive learning for every mind.</p>
                             </div>
 
-                            {/* Role Toggle */}
-                            <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-full flex mb-8 transition-colors duration-300">
-                                <label className="flex-1 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="parent"
-                                        className="sr-only peer"
-                                        checked={role === 'parent'}
-                                        onChange={() => setRole('parent')}
-                                    />
-                                    <div className="text-center py-2.5 rounded-full text-sm font-semibold transition-all duration-200 text-slate-500 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-slate-100 peer-checked:shadow-sm">
-                                        Parent
-                                    </div>
-                                </label>
-                                <label className="flex-1 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="teacher"
-                                        className="sr-only peer"
-                                        checked={role === 'teacher'}
-                                        onChange={() => setRole('teacher')}
-                                    />
-                                    <div className="text-center py-2.5 rounded-full text-sm font-semibold transition-all duration-200 text-slate-500 peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-slate-100 peer-checked:shadow-sm">
-                                        Teacher
-                                    </div>
-                                </label>
+                            {/* Role Indicator (Teacher only for now) */}
+                            <div className="flex justify-center mb-8">
+                                <div className="px-6 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-bold border border-indigo-100 dark:border-indigo-800/50">
+                                    Teacher Access
+                                </div>
                             </div>
 
                             {/* Error Message */}

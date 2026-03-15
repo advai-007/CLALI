@@ -52,7 +52,7 @@ const MILD_STRESS_ADAPTATIONS: AdaptationConfig = {
 const HIGH_STRESS_ADAPTATIONS: AdaptationConfig = {
     fontFamily: 'opendyslexic',
     fontSizeClass: 'text-4xl leading-loose tracking-wide',
-    showCalmingWidget: true,
+    showCalmingWidget: false,
     dimInactiveParagraphs: false,
     enableReadAloud: true,
     headerOpacity: 'full',

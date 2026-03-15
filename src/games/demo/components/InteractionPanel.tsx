@@ -40,13 +40,13 @@ export function InteractionPanel({
 
         switch (scene.interactionType) {
             case 'multipleChoice':
-                return <MultipleChoice {...props} />;
+                return <MultipleChoice key={scene.id} {...props} />;
             case 'sentenceBuilder':
-                return <SentenceBuilder {...props} />;
+                return <SentenceBuilder key={scene.id} {...props} />;
             case 'sceneBuilder':
-                return <SceneBuilder {...props} />;
+                return <SceneBuilder key={scene.id} {...props} />;
             case 'emotionQuestion':
-                return <EmotionQuestion {...props} />;
+                return <EmotionQuestion key={scene.id} {...props} />;
             default:
                 return <div>Unknown Interaction Type</div>;
         }

@@ -29,8 +29,16 @@ export function GameLayout({ children }: { children: React.ReactNode }) {
 
 // ─── Top Section ───
 export function StoryPanel({ text, assistLevel }: { text: string; assistLevel: number }) {
-    // If assist level >= 1, slightly highlight the text
-    const highlightClass = assistLevel >= 1 ? 'bg-yellow-100 ring-4 ring-yellow-200' : 'bg-white';
+    const highlightClass = assistLevel >= 3
+        ? 'bg-amber-50 ring-4 ring-amber-200 shadow-lg'
+        : assistLevel >= 1
+            ? 'bg-yellow-100 ring-4 ring-yellow-200'
+            : 'bg-white';
+    const textClass = assistLevel >= 3
+        ? 'text-[2rem] sm:text-[2.3rem] md:text-[2.7rem] leading-relaxed'
+        : assistLevel >= 1
+            ? 'text-2xl sm:text-3xl md:text-4xl leading-relaxed'
+            : 'text-2xl sm:text-3xl md:text-4xl leading-relaxed';
 
     return (
         <div className="flex-none min-h-[100px] mb-4 flex items-center justify-center p-2 z-20">
@@ -43,7 +51,7 @@ export function StoryPanel({ text, assistLevel }: { text: string; assistLevel: n
                     transition={{ duration: 0.5 }}
                     className={`max-w-4xl rounded-3xl p-6 sm:p-8 shadow-sm transition-all duration-500 ease-out border-4 border-green-50 ${highlightClass}`}
                 >
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl leading-relaxed text-gray-800 text-center font-medium">
+                    <h2 className={`${textClass} text-gray-800 text-center font-medium transition-all duration-300`}>
                         {text}
                     </h2>
                 </motion.div>

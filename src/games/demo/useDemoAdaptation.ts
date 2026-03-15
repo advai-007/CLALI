@@ -1,33 +1,69 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import type { UseAdaptationReturn } from '../../hooks/useAdaptation';
 import type { AssistLevel, InteractionLog } from './demoTypes';
 
-export function useDemoAdaptation(sceneId: string) {
-    // ─── Metrics State ───
+const THRESHOLDS: Record<AssistLevel, number> = {
+    0: 0,
+    1: 2.2,
+    2: 4.4,
+    3: 6.6,
+    4: 8.4,
+};
+
+const CHANGE_COOLDOWN_MS = 3000;
+const RECOVERY_STREAK_FOR_STEP_DOWN = 2;
+
+export function useDemoAdaptation(
+    sceneId: string,
+    adaptationData: UseAdaptationReturn | null
+) {
     const [assistLevel, setAssistLevel] = useState<AssistLevel>(0);
-    const [stressScore, setStressScore] = useState(0);
+    const [difficultyScore, setDifficultyScore] = useState(0);
 
-    // ─── Tracking Refs ───
-    const startTimeRef = useRef<number>(Date.now());
-    const clicksRef = useRef<number>(0);
-    const errorsRef = useRef<number>(0);
-    const lastMousePosRef = useRef<{ x: number, y: number } | null>(null);
-    const distanceRef = useRef<number>(0);
+    const sceneStartRef = useRef(0);
+    const lastInteractionRef = useRef(0);
+    const firstActionAtRef = useRef<number | null>(null);
+    const clicksRef = useRef(0);
+    const errorsRef = useRef(0);
+    const distanceRef = useRef(0);
+    const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
-    // Reset tracking when scene changes
+    const studentSupportBaselineRef = useRef(0);
+    const scenePressureRef = useRef(0);
+    const quickSuccessStreakRef = useRef(0);
+    const recentSuccessRef = useRef(false);
+    const lastAssistChangeRef = useRef(0);
+    const assistLevelRef = useRef<AssistLevel>(0);
+
+    const adaptationDataRef = useRef<UseAdaptationReturn | null>(adaptationData);
     useEffect(() => {
-        startTimeRef.current = Date.now();
+        adaptationDataRef.current = adaptationData;
+    }, [adaptationData]);
+
+    useEffect(() => {
+        const now = Date.now();
+        sceneStartRef.current = now;
+        lastInteractionRef.current = now;
+        firstActionAtRef.current = null;
         clicksRef.current = 0;
         errorsRef.current = 0;
-        lastMousePosRef.current = null;
         distanceRef.current = 0;
-        setAssistLevel(0);
-        setStressScore(0);
+        lastMousePosRef.current = null;
+        recentSuccessRef.current = false;
+
+        scenePressureRef.current = clampScore(studentSupportBaselineRef.current * 0.75);
+        const nextLevel = scoreToAssistLevel(scenePressureRef.current);
+        assistLevelRef.current = nextLevel;
+        lastAssistChangeRef.current = now;
+        setAssistLevel(nextLevel);
+        setDifficultyScore(roundScore(scenePressureRef.current));
     }, [sceneId]);
 
-    // ─── Interaction Handlers ───
     const trackClick = useCallback(() => {
+        const now = Date.now();
         clicksRef.current += 1;
-        evaluateStress();
+        lastInteractionRef.current = now;
+        firstActionAtRef.current ??= now;
     }, []);
 
     const trackMouseMove = useCallback((e: MouseEvent) => {
@@ -37,82 +73,178 @@ export function useDemoAdaptation(sceneId: string) {
             distanceRef.current += Math.sqrt(dx * dx + dy * dy);
         }
         lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+        lastInteractionRef.current = Date.now();
     }, []);
 
     const trackError = useCallback(() => {
+        const now = Date.now();
         errorsRef.current += 1;
-        evaluateStress();
+        lastInteractionRef.current = now;
+        firstActionAtRef.current ??= now;
+        scenePressureRef.current = clampScore(
+            scenePressureRef.current + (errorsRef.current >= 2 ? 1.6 : 1.25)
+        );
+        studentSupportBaselineRef.current = clampScore(studentSupportBaselineRef.current + 0.45);
+        quickSuccessStreakRef.current = 0;
+        recentSuccessRef.current = false;
+        adaptationDataRef.current?.registerGameEvent('incorrect');
     }, []);
 
-    // ─── Stress & Assist Evaluation ───
-    const evaluateStress = () => {
-        const timeSpentMs = Date.now() - startTimeRef.current;
-        const timeSpentSec = timeSpentMs / 1000;
+    const trackSuccess = useCallback(() => {
+        const now = Date.now();
+        const responseTimeSec = sceneStartRef.current > 0 ? (now - sceneStartRef.current) / 1000 : 0;
+        const efficientSuccess = errorsRef.current === 0 && responseTimeSec > 0 && responseTimeSec <= 10;
 
-        // Base metrics
-        const errors = errorsRef.current;
-        let rapidClicks = 0;
-        if (timeSpentSec > 0) {
-            const clickRate = clicksRef.current / timeSpentSec;
-            rapidClicks = clickRate > 1.5 ? (clickRate - 1.5) * 2 : 0; // Penalize > 1.5 clicks per sec
-        }
+        quickSuccessStreakRef.current = efficientSuccess
+            ? quickSuccessStreakRef.current + 1
+            : Math.max(0, quickSuccessStreakRef.current - 1);
 
-        // Idle penalty (if no clicks but high time)
-        let idlePenalty = 0;
-        if (timeSpentSec > 10 && clicksRef.current === 0) {
-            idlePenalty = (timeSpentSec - 10) * 0.5;
-        }
+        scenePressureRef.current = clampScore(scenePressureRef.current - (efficientSuccess ? 1.3 : 0.8));
+        studentSupportBaselineRef.current = clampScore(
+            studentSupportBaselineRef.current - (quickSuccessStreakRef.current >= 2 ? 0.6 : 0.25)
+        );
+        recentSuccessRef.current = true;
+        lastInteractionRef.current = now;
+        firstActionAtRef.current ??= now;
+        adaptationDataRef.current?.registerGameEvent('correct');
+    }, []);
 
-        // Mouse jitter (high distance / low time)
-        let mouseJitter = 0;
-        if (timeSpentSec > 0) {
-            const velocity = distanceRef.current / timeSpentSec;
-            mouseJitter = velocity > 1500 ? (velocity - 1500) / 1000 : 0;
-        }
-
-        // Stress formula (0 - 10)
-        let rawStress = (errors * 3) + rapidClicks + idlePenalty + mouseJitter;
-        rawStress = Math.min(10, Math.max(0, rawStress));
-
-        setStressScore(rawStress);
-
-        // Map Stress to Assist Level
-        let newAssist = 0 as AssistLevel;
-        if (rawStress > 8) newAssist = 4;
-        else if (rawStress > 6) newAssist = 3;
-        else if (rawStress > 4) newAssist = 2;
-        else if (rawStress > 2) newAssist = 1;
-
-        // Never let assist level go down within a single scene to prevent flickering
-        setAssistLevel(prev => Math.max(prev, newAssist) as AssistLevel);
-    };
-
-    // Run evaluation periodically to catch idle time even without clicks
     useEffect(() => {
-        const interval = setInterval(evaluateStress, 2000);
-        return () => clearInterval(interval);
+        const interval = window.setInterval(() => {
+            const now = Date.now();
+            const sceneTimeSec = sceneStartRef.current > 0 ? (now - sceneStartRef.current) / 1000 : 0;
+            const idleTimeSec = lastInteractionRef.current > 0 ? (now - lastInteractionRef.current) / 1000 : 0;
+            const timeToFirstActionSec = firstActionAtRef.current === null
+                ? sceneTimeSec
+                : (firstActionAtRef.current - sceneStartRef.current) / 1000;
+
+            const data = adaptationDataRef.current;
+            const stressScore = data?.scores.stress ?? 0;
+            const focusScore = data?.scores.focus ?? 1;
+            const franticTaps = data?.rawFeatures?.franticTaps ?? 0;
+            const hasFaceData = data?.faceMetrics != null;
+
+            const hesitationPenalty = firstActionAtRef.current === null
+                ? Math.min(2.5, Math.max(0, sceneTimeSec - 6) * 0.28)
+                : timeToFirstActionSec > 8
+                    ? 0.45
+                    : 0;
+
+            const idlePenalty = firstActionAtRef.current !== null && idleTimeSec > 5
+                ? Math.min(2.2, 0.6 + (idleTimeSec - 5) * 0.18)
+                : 0;
+
+            const repeatedErrorsPenalty = Math.min(3.6, errorsRef.current * 1.25);
+
+            const clickRate = sceneTimeSec > 1 ? clicksRef.current / sceneTimeSec : 0;
+            const franticPenalty = clickRate > 2.1
+                ? Math.min(1.1, (clickRate - 2.1) * 0.45)
+                : 0;
+
+            const mouseVelocity = sceneTimeSec > 0 ? distanceRef.current / sceneTimeSec : 0;
+            const mousePenalty = mouseVelocity > 1450
+                ? Math.min(0.8, (mouseVelocity - 1450) / 2200)
+                : 0;
+
+            const sensorPenalty = Math.min(0.75, franticTaps / 6);
+
+            const faceModifier = !hasFaceData
+                ? 0
+                : (
+                    (stressScore >= 0.62 ? 0.75 : 0) +
+                    (focusScore <= 0.45 ? 0.9 : 0) -
+                    (stressScore < 0.28 && focusScore > 0.72 ? 0.35 : 0)
+                );
+
+            const recoveryModifier = recentSuccessRef.current && idleTimeSec < 3 && errorsRef.current === 0
+                ? -0.45
+                : 0;
+
+            const liveBehaviorScore = clampScore(
+                hesitationPenalty +
+                idlePenalty +
+                repeatedErrorsPenalty +
+                franticPenalty +
+                mousePenalty +
+                sensorPenalty +
+                faceModifier +
+                recoveryModifier
+            );
+
+            const targetPressure = clampScore(
+                (studentSupportBaselineRef.current * 0.35) + liveBehaviorScore
+            );
+
+            scenePressureRef.current = clampScore(
+                scenePressureRef.current + ((targetPressure - scenePressureRef.current) * 0.35)
+            );
+
+            const nextDifficulty = clampScore(
+                studentSupportBaselineRef.current + scenePressureRef.current
+            );
+
+            setDifficultyScore(roundScore(nextDifficulty));
+
+            const desiredLevel = scoreToAssistLevel(nextDifficulty);
+            const canChange = now - lastAssistChangeRef.current >= CHANGE_COOLDOWN_MS;
+            let nextAssist = assistLevelRef.current;
+
+            if (desiredLevel > assistLevelRef.current && canChange) {
+                nextAssist = desiredLevel;
+            } else if (
+                desiredLevel < assistLevelRef.current &&
+                canChange &&
+                quickSuccessStreakRef.current >= RECOVERY_STREAK_FOR_STEP_DOWN
+            ) {
+                nextAssist = Math.max(desiredLevel, (assistLevelRef.current - 1) as AssistLevel) as AssistLevel;
+            }
+
+            if (nextAssist !== assistLevelRef.current) {
+                assistLevelRef.current = nextAssist;
+                lastAssistChangeRef.current = now;
+                setAssistLevel(nextAssist);
+            }
+        }, 1500);
+
+        return () => window.clearInterval(interval);
     }, []);
 
-    // ─── Logging ───
     const logCompletion = useCallback((): InteractionLog => {
-        const timeSpent = Date.now() - startTimeRef.current;
-        const log = {
+        const responseTime = Date.now() - sceneStartRef.current;
+        return {
             sceneId,
-            assistLevelUsed: assistLevel,
-            responseTime: timeSpent,
+            assistLevelUsed: assistLevelRef.current,
+            responseTime,
             errorCount: errorsRef.current,
-            stressScore
+            stressScore: difficultyScore,
+            difficultyScore,
         };
-        console.log("Demo Interaction Logged:", log);
-        return log;
-    }, [sceneId, assistLevel, stressScore]);
+    }, [difficultyScore, sceneId]);
 
     return {
         assistLevel,
-        stressScore,
+        stressScore: difficultyScore,
+        difficultyScore,
         trackClick,
         trackError,
+        trackSuccess,
         trackMouseMove,
-        logCompletion
+        logCompletion,
     };
+}
+
+function scoreToAssistLevel(score: number): AssistLevel {
+    if (score >= THRESHOLDS[4]) return 4;
+    if (score >= THRESHOLDS[3]) return 3;
+    if (score >= THRESHOLDS[2]) return 2;
+    if (score >= THRESHOLDS[1]) return 1;
+    return 0;
+}
+
+function clampScore(score: number) {
+    return Math.min(10, Math.max(0, score));
+}
+
+function roundScore(score: number) {
+    return Number(score.toFixed(2));
 }

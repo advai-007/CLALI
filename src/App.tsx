@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import LoginPage from './pages/LoginPage';
 import StudentLoginPage from './pages/StudentLoginPage';
@@ -45,7 +45,14 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/student-login" element={<StudentLoginPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route
               path="/parent-dashboard"
               element={
@@ -86,27 +93,48 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/reading" element={<ReadingModule />} />
-            <Route path="/calibration" element={<CalibrationPage />} />
+            <Route 
+              path="/reading" 
+              element={
+                <ProtectedRoute>
+                  <ReadingModule />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/calibration" 
+              element={
+                <ProtectedRoute>
+                  <CalibrationPage />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Project Demo Story */}
-            <Route path="/story-demo" element={<DemoScreen />} />
+            <Route 
+              path="/story-demo" 
+              element={
+                <ProtectedRoute>
+                  <DemoScreen />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Workshop Game Routes */}
-            <Route path="/workshop" element={<WorkshopProvider><GarageHub /></WorkshopProvider>} />
-            <Route path="/workshop/tires" element={<WorkshopProvider><TireBalanceBay /></WorkshopProvider>} />
-            <Route path="/workshop/wiring" element={<WorkshopProvider><WiringPanel /></WorkshopProvider>} />
-            <Route path="/workshop/fuel" element={<WorkshopProvider><FuelMixMonitor /></WorkshopProvider>} />
-            <Route path="/workshop/bolts" element={<WorkshopProvider><BoltTightening /></WorkshopProvider>} />
+            <Route path="/workshop" element={<ProtectedRoute><WorkshopProvider><GarageHub /></WorkshopProvider></ProtectedRoute>} />
+            <Route path="/workshop/tires" element={<ProtectedRoute><WorkshopProvider><TireBalanceBay /></WorkshopProvider></ProtectedRoute>} />
+            <Route path="/workshop/wiring" element={<ProtectedRoute><WorkshopProvider><WiringPanel /></WorkshopProvider></ProtectedRoute>} />
+            <Route path="/workshop/fuel" element={<ProtectedRoute><WorkshopProvider><FuelMixMonitor /></WorkshopProvider></ProtectedRoute>} />
+            <Route path="/workshop/bolts" element={<ProtectedRoute><WorkshopProvider><BoltTightening /></WorkshopProvider></ProtectedRoute>} />
 
             {/* Word Factory Game Routes */}
             <Route path="/word-factory" element={<Navigate to="/word-factory/level1" replace />} />
-            <Route path="/word-factory/level1" element={<ReadingProvider><WordFactoryLevel1 /></ReadingProvider>} />
-            <Route path="/word-factory/level2" element={<ReadingProvider><WordFactoryLevel2 /></ReadingProvider>} />
-            <Route path="/word-factory/level3" element={<ReadingProvider><WordFactoryLevel3 /></ReadingProvider>} />
-            <Route path="/word-factory/level4" element={<ReadingProvider><WordFactoryLevel4 /></ReadingProvider>} />
-            <Route path="/word-factory/level5" element={<ReadingProvider><WordFactoryLevel5 /></ReadingProvider>} />
-            <Route path="/word-factory/matching" element={<ReadingProvider><WordMatchingGame /></ReadingProvider>} />
+            <Route path="/word-factory/level1" element={<ProtectedRoute><ReadingProvider><WordFactoryLevel1 /></ReadingProvider></ProtectedRoute>} />
+            <Route path="/word-factory/level2" element={<ProtectedRoute><ReadingProvider><WordFactoryLevel2 /></ReadingProvider></ProtectedRoute>} />
+            <Route path="/word-factory/level3" element={<ProtectedRoute><ReadingProvider><WordFactoryLevel3 /></ReadingProvider></ProtectedRoute>} />
+            <Route path="/word-factory/level4" element={<ProtectedRoute><ReadingProvider><WordFactoryLevel4 /></ReadingProvider></ProtectedRoute>} />
+            <Route path="/word-factory/level5" element={<ProtectedRoute><ReadingProvider><WordFactoryLevel5 /></ReadingProvider></ProtectedRoute>} />
+            <Route path="/word-factory/matching" element={<ProtectedRoute><ReadingProvider><WordMatchingGame /></ReadingProvider></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

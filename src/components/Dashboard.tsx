@@ -1,41 +1,29 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Calculator, Play, Flame, Activity, LogOut } from 'lucide-react';
+import { BookOpen, Calculator, Play, Flame, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { sensorBridge } from '../utils/tracking/SensorBridge';
-import { featureExtractor, type ExtractedFeatures } from '../utils/tracking/FeatureExtractor';
+import { featureExtractor } from '../utils/tracking/FeatureExtractor';
 import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const { studentUser, studentSignOut } = useAuth();
     // Derive display name — checks live context, then raw localStorage, then friendly fallback
-    const displayName = studentUser?.full_name
-        || (() => { try { return JSON.parse(localStorage.getItem('studentUser') || '{}')?.full_name || ''; } catch { return ''; } })()
-        || 'Explorer';
-    const [debugFeatures, setDebugFeatures] = useState<ExtractedFeatures | null>(null);
+    const displayName = studentUser?.full_name || 'Explorer';
 
     useEffect(() => {
-        // Connect bridge to extractor
-        const bridgeUnsub = sensorBridge.subscribe(featureExtractor.processRawData);
-
-        // Connect extractor to our debug UI
-        const featureUnsub = featureExtractor.subscribe((features) => {
-            setDebugFeatures(features);
-        });
-
-        // Start them up
+        // Start bridge for background adaptation logging
         sensorBridge.start();
         featureExtractor.start();
 
         return () => {
-            bridgeUnsub();
-            featureUnsub();
             sensorBridge.stop();
             featureExtractor.stop();
         };
     }, []);
+
     return (
         <div className="text-text-dark font-lexend transition-colors duration-300">
             <div className="max-w-4xl mx-auto px-6 py-8 relative">
@@ -65,7 +53,12 @@ const Dashboard = () => {
                     </motion.button>
 
                     <div className="text-center">
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-white shadow-sm">
+                            <img src="/logo.png" alt="CLALI Logo" className="w-full h-full object-cover" />
+                        </div>
                         <h1 className="text-2xl font-black text-slate-400 uppercase tracking-widest">Clali</h1>
+                    </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -115,7 +108,6 @@ const Dashboard = () => {
                     </section>
 
                     {/* Module Grid */}
-                    {/* MAIN PROJECT DEMO */}
                     <div className="grid grid-cols-1 mb-8 w-full max-w-4xl mx-auto">
                         <motion.button
                             whileHover={{ scale: 1.02, y: -5 }}
@@ -134,9 +126,6 @@ const Dashboard = () => {
                             </div>
 
                             <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-3 py-0.5 bg-white/20 rounded-full text-[11px] font-bold text-white uppercase tracking-wider">★ Main Project Demo ★</span>
-                                </div>
                                 <h3 className="text-4xl font-black text-white leading-tight mb-2 drop-shadow-sm font-lexend">The Broken Storybook</h3>
                                 <p className="text-lg font-bold text-white/80">Adaptive Story Experience</p>
                             </div>
@@ -175,9 +164,6 @@ const Dashboard = () => {
                             </div>
 
                             <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-3 py-0.5 bg-white/20 rounded-full text-[11px] font-bold text-white uppercase tracking-wider">New</span>
-                                </div>
                                 <h3 className="text-3xl font-black text-white leading-tight mb-2">Mechanic Workshop</h3>
                                 <p className="text-base font-bold text-white/60">Fix gears, balance tires & more!</p>
                             </div>
@@ -213,9 +199,6 @@ const Dashboard = () => {
                             </div>
 
                             <div className="relative z-10 text-left flex flex-col justify-center h-full max-w-[55%]">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-3 py-0.5 bg-white/20 rounded-full text-[11px] font-bold text-white uppercase tracking-wider">New Game</span>
-                                </div>
                                 <h3 className="text-3xl font-black text-white leading-tight mb-2">Word Factory</h3>
                                 <p className="text-base font-bold text-white/60">Drag & drop letters to spell!</p>
                             </div>
@@ -243,41 +226,7 @@ const Dashboard = () => {
                             <StatItem icon={Flame} value="3" label="Days" color="orange" bgColor="bg-orange-100" />
                         </div>
                     </section>
-
                 </main>
-
-                {/* Metrics Debug Panel (Bottom Left) */}
-                {debugFeatures && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="fixed bottom-6 left-6 z-50 bg-slate-900/90 text-green-400 font-mono text-xs p-5 rounded-2xl shadow-float backdrop-blur-md border border-slate-700 pointer-events-none transition-all w-72"
-                    >
-                        <div className="flex items-center gap-2 mb-3 text-white border-b border-slate-700 pb-2">
-                            <Activity size={16} className="text-emerald-400" />
-                            <span className="font-bold tracking-wider">TRACKING DEBUG</span>
-                        </div>
-                        <div className="grid grid-cols-[1fr_auto] gap-y-2 text-sm">
-                            <span className="text-slate-400">Idle Status</span>
-                            <span className={debugFeatures.isIdle ? 'text-orange-400' : 'text-emerald-400'}>{debugFeatures.isIdle ? 'IDLE' : 'ACTIVE'}</span>
-
-                            <span className="text-slate-400">Tab Visible</span>
-                            <span className={debugFeatures.isVisible ? 'text-emerald-400' : 'text-orange-400'}>{debugFeatures.isVisible ? 'YES' : 'NO'}</span>
-
-                            <span className="text-slate-400">Frantic Taps</span>
-                            <span className={debugFeatures.franticTaps > 0 ? 'text-orange-400 font-bold' : ''}>{debugFeatures.franticTaps}</span>
-
-                            <span className="text-slate-400">Scroll YoYo</span>
-                            <span className={debugFeatures.scrollYoYoCount > 0 ? 'text-orange-400 font-bold' : ''}>{debugFeatures.scrollYoYoCount}</span>
-
-                            <span className="text-slate-400">Max Hold</span>
-                            <span>{debugFeatures.touchHoldDuration}ms</span>
-
-                            <span className="text-slate-400">Motion Mag</span>
-                            <span>{debugFeatures.motionMagnitude.toFixed(2)}</span>
-                        </div>
-                    </motion.div>
-                )}
             </div>
         </div>
     );
