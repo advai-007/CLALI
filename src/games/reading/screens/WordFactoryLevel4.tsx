@@ -57,18 +57,14 @@ export default function WordFactoryLevel4() {
 
     const { speak, isSpeaking, enableReadAloud } = useReadAloud();
 
-    // Auto-speak on new task
-    useEffect(() => {
-        const timer = setTimeout(() => speak(task.word), 500);
-        return () => clearTimeout(timer);
-    }, [currentTaskIdx, speak, task.word]);
 
     // Adaptive Auto-speak
     useEffect(() => {
         if (enableReadAloud && !placedWord && !isSpeaking) {
             speak(task.word, true);
         }
-    }, [enableReadAloud, placedWord, isSpeaking, speak, task.word]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enableReadAloud, placedWord, speak, task.word]);
 
     // Reset adaptation metrics when task changes
     useEffect(() => {
@@ -122,7 +118,7 @@ export default function WordFactoryLevel4() {
     }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
-        (id: string, info: any) => {
+        (id: string, info: { point: { x: number; y: number } }) => {
             setDraggedWord(null);
             if (!dropZoneRef.current) return;
 

@@ -58,18 +58,14 @@ export default function WordFactoryLevel5() {
         return text;
     }, [task]);
 
-    // Auto-speak on new task
-    useEffect(() => {
-        const timer = setTimeout(() => speak(getFullSentence()), 500);
-        return () => clearTimeout(timer);
-    }, [taskIdx, speak, getFullSentence]);
 
     // Adaptive Auto-speak
     useEffect(() => {
         if (enableReadAloud && !chosen && !isSpeaking) {
             speak(getFullSentence(), true);
         }
-    }, [enableReadAloud, chosen, isSpeaking, speak, getFullSentence]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enableReadAloud, chosen, speak, getFullSentence]);
 
     useEffect(() => {
         resetAdaptation(`level5-${taskIdx}`);
@@ -102,7 +98,7 @@ export default function WordFactoryLevel5() {
         setChosen(null);
         monitor.startTrackingTask();
         return () => monitor.stopTracking();
-    }, [taskIdx, monitor, setCurrentLevel]);
+    }, [taskIdx, monitor, setCurrentLevel, setChosen]);
 
     const showFeedback = useCallback((msg: string, type: 'correct' | 'incorrect' | 'hint') => {
         setFeedbackMsg(msg);

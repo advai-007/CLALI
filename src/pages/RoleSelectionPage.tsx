@@ -237,9 +237,7 @@ const RoleSelectionPage = () => {
                 transition={{ delay: 1 }}
                 className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 text-slate-300 dark:text-slate-700 font-black tracking-widest text-xs uppercase z-0"
             >
-                <div className="h-px w-20 bg-current"></div>
-                <span>Adventures Await</span>
-                <div className="h-px w-20 bg-current"></div>
+                
             </motion.div>
         </div>
     );

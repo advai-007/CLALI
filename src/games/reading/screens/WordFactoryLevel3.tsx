@@ -57,11 +57,6 @@ export default function WordFactoryLevel3() {
 
     const { speak, isSpeaking, enableReadAloud } = useReadAloud();
 
-    // Auto-speak on new task
-    useEffect(() => {
-        const timer = setTimeout(() => speak(task.word), 500);
-        return () => clearTimeout(timer);
-    }, [currentTaskIdx, speak, task.word]);
 
     // Adaptive Auto-speak
     useEffect(() => {
@@ -69,7 +64,8 @@ export default function WordFactoryLevel3() {
         if (enableReadAloud && hasUnplaced && !isSpeaking) {
             speak(task.word, true);
         }
-    }, [enableReadAloud, placedLetters, isSpeaking, speak, task.word]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enableReadAloud, placedLetters, speak, task.word]);
 
     useEffect(() => {
         setCurrentLevel(3);
@@ -133,7 +129,7 @@ export default function WordFactoryLevel3() {
     }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
-        (id: string, info: any) => {
+        (id: string, info: { point: { x: number; y: number } }) => {
             setDraggedLetter(null);
             const dropPoint = info.point;
             let closestSlot = -1;

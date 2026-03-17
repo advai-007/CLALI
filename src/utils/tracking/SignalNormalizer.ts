@@ -184,11 +184,11 @@ export class SignalNormalizer {
             STRESS_WEIGHTS.headRoll * headRollScore;
 
         // Game error penalty (decays every 5s)
-        if (now - this.lastErrorDecay > 5000) {
+        if (now - this.lastErrorDecay > 15000) {
             this.recentErrors = Math.max(0, this.recentErrors - 1);
             this.lastErrorDecay = now;
         }
-        const errorStress = Math.min(1.0, this.recentErrors * 0.4);
+        const errorStress = Math.min(1.0, this.recentErrors * 0.3);
         rawStress = Math.min(1.0, rawStress + errorStress);
 
         // --- Compute raw focus components (each 0-1, where 1 = focused) ---

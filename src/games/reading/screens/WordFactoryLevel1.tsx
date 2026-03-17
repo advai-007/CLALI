@@ -61,18 +61,14 @@ export default function WordFactoryLevel1() {
 
     const { speak, isSpeaking, enableReadAloud } = useReadAloud();
 
-    // Auto-speak on new task
-    useEffect(() => {
-        const timer = setTimeout(() => speak(task.word), 500);
-        return () => clearTimeout(timer);
-    }, [currentTaskIdx, speak, task.word]);
 
     // Adaptive Auto-speak
     useEffect(() => {
         if (enableReadAloud && !placedLetter && !isSpeaking) {
             speak(task.word, true);
         }
-    }, [enableReadAloud, placedLetter, isSpeaking, speak, task.word]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enableReadAloud, placedLetter, speak, task.word]);
 
     // Reset adaptation metrics when task changes
     useEffect(() => {
@@ -123,14 +119,14 @@ export default function WordFactoryLevel1() {
         setFeedbackId((prev) => prev + 1);
     }, []);
 
-    const handleDragStart = useCallback((id: string, _e: any) => {
+    const handleDragStart = useCallback((id: string) => {
         setDraggedLetter(id);
         monitor.recordInteraction();
         trackClick();
     }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
-        (id: string, info: any) => {
+        (id: string, info: { point: { x: number; y: number } }) => {
             setDraggedLetter(null);
             if (!dropZoneRef.current) return;
 
@@ -260,7 +256,7 @@ export default function WordFactoryLevel1() {
                                     drag
                                     dragMomentum={false}
                                     dragSnapToOrigin={true}
-                                    onDragStart={(e) => handleDragStart(item.id, e)}
+                                    onDragStart={() => handleDragStart(item.id)}
                                     onDragEnd={(_e, info) => handleDragEnd(item.id, info)}
                                     whileDrag={{ scale: 1.2, zIndex: 9999, transition: { duration: 0.1 } }}
                                     style={{
