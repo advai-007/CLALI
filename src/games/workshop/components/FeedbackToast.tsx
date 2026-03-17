@@ -53,14 +53,14 @@ export default function FeedbackToast({
         <AnimatePresence>
             {visible && (
                 <motion.div
-                    className="fixed bottom-28 left-1/2 z-[90] pointer-events-none"
+                    className="fixed bottom-8 left-1/2 z-[90] pointer-events-none px-4"
                     initial={{ x: '-50%', y: 30, opacity: 0, scale: 0.8 }}
                     animate={{ x: '-50%', y: 0, opacity: 1, scale: 1 }}
                     exit={{ x: '-50%', y: -20, opacity: 0, scale: 0.9 }}
                     transition={{ type: 'spring', damping: 15, stiffness: 300 }}
                 >
                     <div
-                        className="px-6 py-3 rounded-2xl flex items-center gap-3 workshop-heading text-lg whitespace-nowrap"
+                        className="px-5 py-3 rounded-2xl flex items-center gap-3 workshop-heading text-base sm:text-lg max-w-[min(90vw,32rem)]"
                         style={{
                             backgroundColor: config.bg,
                             color: config.color,

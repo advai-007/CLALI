@@ -60,6 +60,16 @@ export interface StudentDetails {
     }[];
 }
 
+export interface StudentDashboardSummary {
+    currentStreak: number;
+    sessionsPlayed: number;
+    completedActivities: number;
+    averageScore: number | null;
+    successCount: number;
+    lastActive: string | null;
+    currentState: string;
+}
+
 /** Map a trigger_state string to a numeric cognitive load score */
 function stateToLoad(state: string): number {
     const s = state.toLowerCase();
@@ -91,6 +101,50 @@ function categorizeState(state: string): 'calm' | 'mildstress' | 'highstress' | 
     if (s.includes('disengage')) return 'disengaged';
     
     return 'other';
+}
+
+function dateKeyFromDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function dateKey(dateValue: string): string {
+    return dateKeyFromDate(new Date(dateValue));
+}
+
+function calculateCurrentStreak(dateValues: string[]): number {
+    if (dateValues.length === 0) return 0;
+
+    const uniqueDays = Array.from(new Set(dateValues.map(dateKey)))
+        .sort((a, b) => b.localeCompare(a));
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const mostRecent = new Date(`${uniqueDays[0]}T00:00:00`);
+    const daysSinceMostRecent = Math.round((today.getTime() - mostRecent.getTime()) / 86400000);
+
+    if (daysSinceMostRecent > 1) {
+        return 0;
+    }
+
+    let streak = 0;
+    let expectedDate = new Date(today);
+    expectedDate.setDate(today.getDate() - daysSinceMostRecent);
+
+    for (const day of uniqueDays) {
+        const expectedKey = dateKeyFromDate(expectedDate);
+        if (day !== expectedKey) {
+            break;
+        }
+
+        streak += 1;
+        expectedDate.setDate(expectedDate.getDate() - 1);
+    }
+
+    return streak;
 }
 
 export const studentMetricsApi = {
@@ -157,11 +211,20 @@ export const studentMetricsApi = {
                     .limit(1)
                     .maybeSingle();
 
-                const { count: recentCount } = await supabase
-                    .from('adaptation_events')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('user_id', student.id)
-                    .gte('created_at', since24h);
+                let recentCount = 0;
+                try {
+                    const { count, error: recentCountError } = await supabase
+                        .from('adaptation_events')
+                        .select('id', { count: 'exact' })
+                        .eq('user_id', student.id)
+                        .gte('created_at', since24h)
+                        .limit(1);
+
+                    if (recentCountError) throw recentCountError;
+                    recentCount = count ?? 0;
+                } catch (err) {
+                    console.warn(`Failed to fetch recent adaptation count for student ${student.id}:`, err);
+                }
 
                 const state = latestEvent?.trigger_state || 'CALM';
                 const load = stateToLoad(state);
@@ -202,6 +265,57 @@ export const studentMetricsApi = {
         }));
 
         return dashboardData.filter((d): d is ClassMetrics => d !== null);
+    },
+
+    async getStudentDashboardSummary(studentId: string): Promise<StudentDashboardSummary> {
+        const [{ data: progress, error: progressError }, { data: events, error: eventError }] = await Promise.all([
+            supabase
+                .from('learning_progress')
+                .select('session_id, completed_at, score, total_questions')
+                .eq('student_id', studentId)
+                .order('completed_at', { ascending: false }),
+            supabase
+                .from('adaptation_events')
+                .select('session_id, created_at, trigger_state, action_taken')
+                .eq('user_id', studentId)
+                .order('created_at', { ascending: false }),
+        ]);
+
+        if (progressError) throw progressError;
+        if (eventError) throw eventError;
+
+        const progressRows = progress || [];
+        const eventRows = events || [];
+
+        const sessionIds = new Set<string>();
+        progressRows.forEach((row) => sessionIds.add(row.session_id));
+        eventRows.forEach((row) => sessionIds.add(row.session_id));
+
+        const activityDates = [
+            ...progressRows.map((row) => row.completed_at).filter((value): value is string => Boolean(value)),
+            ...eventRows.map((row) => row.created_at),
+        ];
+
+        const scoredActivities = progressRows.filter((row) => row.total_questions > 0);
+        const averageScore = scoredActivities.length > 0
+            ? Math.round(
+                scoredActivities.reduce((total, row) => total + (row.score / row.total_questions) * 100, 0) /
+                scoredActivities.length
+            )
+            : null;
+        const latestProgressAt = progressRows.find((row) => row.completed_at)?.completed_at ?? null;
+
+        const successCount = eventRows.filter((row) => row.trigger_state === 'SUCCESS').length;
+
+        return {
+            currentStreak: calculateCurrentStreak(activityDates),
+            sessionsPlayed: sessionIds.size,
+            completedActivities: progressRows.length,
+            averageScore,
+            successCount,
+            lastActive: eventRows[0]?.created_at ?? latestProgressAt,
+            currentState: eventRows[0]?.trigger_state ?? 'CALM',
+        };
     },
 
     /**

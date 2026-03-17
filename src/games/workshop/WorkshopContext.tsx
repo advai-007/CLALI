@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMachine } from '@xstate/react';
 import { adaptiveMachine } from './adaptiveMachine';
+import { WORKSHOP_FLOW, WORKSHOP_STATIONS } from './workshopData';
 import {
     AdaptiveState,
     type GameStation,
@@ -10,62 +11,83 @@ import {
     type TaskProgress,
 } from './workshopTypes';
 
-// ─── Station Definitions ────────────────────────────────────────────
-const INITIAL_STATIONS: StationInfo[] = [
-    { id: 'tires', title: 'Tire Balance Bay', icon: 'tire_repair', route: '/workshop/tires', status: StationStatus.AVAILABLE },
-    { id: 'bolts', title: 'Bolt Tightening', icon: 'build', route: '/workshop/bolts', status: StationStatus.AVAILABLE },
-    { id: 'wiring', title: 'Wiring Panel', icon: 'cable', route: '/workshop/wiring', status: StationStatus.AVAILABLE },
-    { id: 'fuel', title: 'Fuel Mix Monitor', icon: 'local_gas_station', route: '/workshop/fuel', status: StationStatus.AVAILABLE },
-];
-
-// ─── Context Type ───────────────────────────────────────────────────
 interface WorkshopContextType {
     stations: StationInfo[];
     totalStars: number;
     progressRecords: Map<GameStation, TaskProgress>;
     adaptiveState: AdaptiveState;
-
-    // Adaptive machine controls
+    completedStations: number;
+    completionPercent: number;
+    isWorkshopComplete: boolean;
+    nextStation: StationInfo | null;
     sendAdaptive: (event: { type: 'DIFFICULTY_DETECTED' | 'CORRECT_ACTION' | 'INCORRECT_ACTION' | 'HINT_SHOWN' | 'RESET' }) => void;
-
-    // Actions
     completeStation: (stationId: GameStation, progress: TaskProgress) => void;
     resetWorkshop: () => void;
 }
 
 const WorkshopContext = createContext<WorkshopContextType | undefined>(undefined);
 
-// ─── Provider ───────────────────────────────────────────────────────
 export function WorkshopProvider({ children }: { children: ReactNode }) {
     const [snapshot, send] = useMachine(adaptiveMachine);
-    const [stations, setStations] = useState<StationInfo[]>(INITIAL_STATIONS);
+    const [stations, setStations] = useState<StationInfo[]>(WORKSHOP_STATIONS);
     const [progressRecords, setProgressRecords] = useState<Map<GameStation, TaskProgress>>(new Map());
 
     const adaptiveState = snapshot.context.state;
 
+    const completedStations = useMemo(
+        () => stations.filter((station) => station.status === StationStatus.COMPLETED).length,
+        [stations]
+    );
+
+    const completionPercent = useMemo(
+        () => Math.round((completedStations / stations.length) * 100),
+        [completedStations, stations.length]
+    );
+
     const totalStars = useMemo(() => {
         let stars = 0;
-        progressRecords.forEach((p) => { stars += p.starsEarned; });
+        progressRecords.forEach((progress) => {
+            stars += progress.starsEarned;
+        });
         return stars;
     }, [progressRecords]);
 
+    const isWorkshopComplete = completedStations === stations.length;
+
+    const nextStation = useMemo(
+        () => stations.find((station) => station.status === StationStatus.AVAILABLE) ?? null,
+        [stations]
+    );
+
     const completeStation = useCallback((stationId: GameStation, progress: TaskProgress) => {
-        setStations((prev) =>
-            prev.map((s) =>
-                s.id === stationId ? { ...s, status: StationStatus.COMPLETED } : s
-            )
-        );
-        setProgressRecords((prev) => {
-            const next = new Map(prev);
-            next.set(stationId, progress);
-            return next;
+        setStations((previousStations) => {
+            const stationIndex = WORKSHOP_FLOW.indexOf(stationId);
+            const nextStationId = WORKSHOP_FLOW[stationIndex + 1];
+
+            return previousStations.map((station) => {
+                if (station.id === stationId) {
+                    return { ...station, status: StationStatus.COMPLETED };
+                }
+
+                if (station.id === nextStationId && station.status === StationStatus.LOCKED) {
+                    return { ...station, status: StationStatus.AVAILABLE };
+                }
+
+                return station;
+            });
         });
-        // Reset adaptive state for next task
+
+        setProgressRecords((previousRecords) => {
+            const nextRecords = new Map(previousRecords);
+            nextRecords.set(stationId, progress);
+            return nextRecords;
+        });
+
         send({ type: 'RESET' });
     }, [send]);
 
     const resetWorkshop = useCallback(() => {
-        setStations(INITIAL_STATIONS);
+        setStations(WORKSHOP_STATIONS);
         setProgressRecords(new Map());
         send({ type: 'RESET' });
     }, [send]);
@@ -75,10 +97,26 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
         totalStars,
         progressRecords,
         adaptiveState,
+        completedStations,
+        completionPercent,
+        isWorkshopComplete,
+        nextStation,
         sendAdaptive: send,
         completeStation,
         resetWorkshop,
-    }), [stations, totalStars, progressRecords, adaptiveState, send, completeStation, resetWorkshop]);
+    }), [
+        stations,
+        totalStars,
+        progressRecords,
+        adaptiveState,
+        completedStations,
+        completionPercent,
+        isWorkshopComplete,
+        nextStation,
+        send,
+        completeStation,
+        resetWorkshop,
+    ]);
 
     return (
         <WorkshopContext.Provider value={value}>
@@ -87,10 +125,11 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
     );
 }
 
-// ─── Hook ───────────────────────────────────────────────────────────
 // eslint-disable-next-line react-refresh/only-export-components
 export function useWorkshop() {
     const ctx = useContext(WorkshopContext);
-    if (!ctx) throw new Error('useWorkshop must be used within <WorkshopProvider>');
+    if (!ctx) {
+        throw new Error('useWorkshop must be used within <WorkshopProvider>');
+    }
     return ctx;
 }

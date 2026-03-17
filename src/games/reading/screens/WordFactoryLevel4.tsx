@@ -8,6 +8,7 @@ import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
+import { useReadAloud } from '../hooks/useReadAloud';
 import { POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
 import { CharacterGuide } from '../../../components/shared/CharacterGuide';
 import '../../workshop/workshop.css';
@@ -51,59 +52,23 @@ export default function WordFactoryLevel4() {
     const [feedbackId, setFeedbackId] = useState(0);
     const [showVictory, setShowVictory] = useState(false);
     const [draggedWord, setDraggedWord] = useState<string | null>(null);
-    const [isSpeaking, setIsSpeaking] = useState(false);
 
     const dropZoneRef = useRef<HTMLDivElement>(null);
 
-    // Audio Logic with "Child-like" Indian Accent Tuning
-    const speakWord = useCallback(() => {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(task.word.toLowerCase());
-
-            // Try to find an Indian English voice
-            const voices = window.speechSynthesis.getVoices();
-            const preferredVoice = voices.find(v =>
-                v.lang === 'en-IN' || v.lang.startsWith('en-IN')
-            ) || voices.find(v =>
-                (v.name.includes('Google') || v.name.includes('Natural')) && v.lang.startsWith('en')
-            ) || voices.find(v => v.lang.startsWith('en'));
-
-            if (preferredVoice) utterance.voice = preferredVoice;
-
-            // Tuning: Slower speed, higher pitch for child-like feel
-            utterance.rate = 0.7; // Slower as requested
-            utterance.pitch = 1.35;
-
-            utterance.onstart = () => setIsSpeaking(true);
-            utterance.onend = () => setIsSpeaking(false);
-            window.speechSynthesis.speak(utterance);
-        }
-    }, [task.word]);
-
-    // Ensure voices are loaded (browsers often load them async)
-    useEffect(() => {
-        const handleVoicesChanged = () => {
-            // No-op to trigger re-render or just ensure voices are cached by browser
-        };
-        window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-        return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-    }, []);
+    const { speak, isSpeaking, enableReadAloud } = useReadAloud();
 
     // Auto-speak on new task
     useEffect(() => {
-        const timer = setTimeout(speakWord, 500);
+        const timer = setTimeout(() => speak(task.word), 500);
         return () => clearTimeout(timer);
-    }, [currentTaskIdx, speakWord]);
+    }, [currentTaskIdx, speak, task.word]);
 
-    // Adaptive Auto-speak: If the biometric machine enables read-aloud (e.g. stress detected)
-    // and we haven't placed the word yet, speak it again.
-    const { adaptationData } = useReading();
+    // Adaptive Auto-speak
     useEffect(() => {
-        if (adaptationData?.adaptations.enableReadAloud && !placedWord && !isSpeaking) {
-            speakWord();
+        if (enableReadAloud && !placedWord && !isSpeaking) {
+            speak(task.word, true);
         }
-    }, [adaptationData?.adaptations.enableReadAloud, placedWord, isSpeaking, speakWord]);
+    }, [enableReadAloud, placedWord, isSpeaking, speak, task.word]);
 
     // Reset adaptation metrics when task changes
     useEffect(() => {
@@ -124,26 +89,17 @@ export default function WordFactoryLevel4() {
     // Belt items based on assist stage
     const beltItems = useMemo(() => {
         let choices = [task.word, ...task.distractors];
-
         if (isReveal) {
-            choices = [task.word]; // Stage 4: only the correct word
+            choices = [task.word];
         } else if (isReduced) {
-            choices = [task.word, task.distractors[0]]; // Stage 2: one distractor
+            choices = [task.word, task.distractors[0]];
         }
 
         return choices.sort().map(w => {
             const isCorrect = w === task.word;
-            let bgColor = '#E5E7EB'; // Default gray
-
-            if (isCorrect && isReveal) {
-                bgColor = '#FDE68A'; // Stage 4: bright yellow
-            }
-
-            return {
-                id: w,
-                label: w,
-                color: bgColor
-            };
+            let bgColor = '#E5E7EB';
+            if (isCorrect && isReveal) bgColor = '#FDE68A';
+            return { id: w, label: w, color: bgColor };
         });
     }, [task, assistLevel, isReveal, isReduced]);
 
@@ -166,10 +122,8 @@ export default function WordFactoryLevel4() {
     }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (id: string, info: any) => {
             setDraggedWord(null);
-
             if (!dropZoneRef.current) return;
 
             const dropRect = dropZoneRef.current.getBoundingClientRect();
@@ -184,7 +138,6 @@ export default function WordFactoryLevel4() {
                     setPlacedWord(id);
                     monitor.recordCorrectAction();
                     sendAdaptive({ type: 'CORRECT_ACTION' });
-
                     showFeedback(POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)], 'correct');
 
                     setTimeout(() => {
@@ -203,7 +156,7 @@ export default function WordFactoryLevel4() {
                     showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
                 }
             } else {
-                monitor.recordIncorrectAction();
+                monitor.recordInteraction();
             }
         },
         [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, addStars, trackError]
@@ -223,22 +176,18 @@ export default function WordFactoryLevel4() {
     }, [isReveal, maxAssistControls]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden" onClick={trackClick}>
             <WordFactoryHUD title="Audio Words" icon="volume_up" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full h-full flex flex-col items-center justify-center min-h-screen relative z-10">
-
                 {/* Speaker Area */}
-                <div className="relative w-full max-w-xl bg-[#1E293B] rounded-[3rem] pt-16 pb-6 px-6 shadow-[0_30px_60px_rgba(0,0,0,0.6),inset_0_4px_0_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-12 flex flex-col items-center justify-center gap-6 h-[320px]">
-
-                    {/* Header */}
+                <div className="relative w-full max-xl bg-[#1E293B] rounded-[3rem] pt-16 pb-6 px-6 shadow-[0_30px_60px_rgba(0,0,0,0.6),inset_0_4px_0_rgba(255,255,255,0.1)] border-8 border-slate-700 mb-12 flex flex-col items-center justify-center gap-6 h-[400px]">
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 w-48 h-8 bg-black/40 rounded-full flex items-center justify-center border-t border-white/10">
                         <span className="text-blue-300 font-bold uppercase tracking-widest text-[10px]">
                             Listen & Identify
                         </span>
                     </div>
 
-                    {/* Interactive Speaker */}
                     <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -253,25 +202,19 @@ export default function WordFactoryLevel4() {
                                     ]
                                 }
                                 : isGlowing
-                                    ? {
-                                        boxShadow: "0 0 25px rgba(251, 191, 36, 0.4)"
-                                    }
+                                    ? { boxShadow: "0 0 25px rgba(251, 191, 36, 0.4)" }
                                     : {}
                         }
                         transition={isSpeaking ? { repeat: Infinity, duration: 0.8 } : {}}
-                        onClick={speakWord}
+                        onClick={() => speak(task.word)}
                         className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 ${isSpeaking
                                 ? "bg-blue-500 shadow-blue-500/50"
                                 : "bg-slate-800 hover:bg-slate-700 border-4 border-slate-600"
                             } ${isGlowing ? "ring-8 ring-amber-400/40" : ""}`}
                     >
-                        <Volume2
-                            className={`w-12 h-12 ${isSpeaking ? "text-white" : "text-blue-400"
-                                }`}
-                        />
+                        <Volume2 className={`w-12 h-12 ${isSpeaking ? "text-white" : "text-blue-400"}`} />
                     </motion.button>
 
-                    {/* Hint Display Area */}
                     <div className="h-10 flex items-center justify-center">
                         <AnimatePresence mode="wait">
                             {isReveal ? (
@@ -299,7 +242,6 @@ export default function WordFactoryLevel4() {
                         </AnimatePresence>
                     </div>
 
-                    {/* Drop Zone */}
                     <div
                         ref={dropZoneRef}
                         className={`w-56 h-20 rounded-[1.5rem] border-4 bg-black/60 flex items-center justify-center transition-all duration-300 ${isReveal && !placedWord
@@ -323,7 +265,6 @@ export default function WordFactoryLevel4() {
                             </span>
                         )}
                     </div>
-
                 </div>
 
                 <div className="relative w-full flex justify-center mt-auto">
@@ -348,8 +289,7 @@ export default function WordFactoryLevel4() {
                                         backgroundColor: item.color,
                                     }}
                                     animate={shouldAssist ? maxAssistControls : { y: 0 }}
-                                    className={`relative flex items-center justify-center rounded-2xl font-black text-3xl sm:text-4xl lg:text-5xl text-slate-800 shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.7)] border-b-6 border-black/20 ws-touch-target pointer-events-auto cursor-grab active:cursor-grabbing tracking-tight ${shouldAssist ? 'ring-8 ring-amber-400 ring-opacity-60' : ''
-                                        }`}
+                                    className={`relative flex items-center justify-center rounded-2xl font-black text-3xl sm:text-4xl lg:text-5xl text-slate-800 shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.7)] border-b-6 border-black/20 ws-touch-target pointer-events-auto cursor-grab active:cursor-grabbing tracking-tight ${shouldAssist ? 'ring-8 ring-amber-400 ring-opacity-60' : ''}`}
                                 >
                                     {item.label}
                                 </motion.div>
@@ -366,7 +306,6 @@ export default function WordFactoryLevel4() {
                 </div>
             </main>
 
-            {/* Character Guide at the bottom */}
             <div className="fixed bottom-4 left-4 z-40">
                 <CharacterGuide assistLevel={assistLevel} />
             </div>
@@ -377,13 +316,10 @@ export default function WordFactoryLevel4() {
                 <VictoryModal
                     title="Audio Master!"
                     isOpen={true} starsEarned={1}
-                    onNext={() => {
-                        navigate('/word-factory/matching');
-                    }}
+                    onNext={() => navigate('/word-factory/matching')}
                     onClose={() => navigate('/dashboard')}
                 />
             )}
         </div>
     );
 }
-

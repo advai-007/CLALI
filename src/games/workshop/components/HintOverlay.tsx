@@ -27,7 +27,7 @@ export default function HintOverlay({
         <AnimatePresence>
             {isVisible && (
                 <motion.div
-                    className="fixed bottom-24 left-1/2 z-[80] pointer-events-none"
+                    className="fixed top-24 left-1/2 z-[80] pointer-events-none px-4"
                     initial={{ x: '-50%', y: 20, opacity: 0 }}
                     animate={{ x: '-50%', y: 0, opacity: 1 }}
                     exit={{ x: '-50%', y: 20, opacity: 0 }}
@@ -35,7 +35,7 @@ export default function HintOverlay({
                 >
                     {/* Hint Bubble */}
                     <div
-                        className="bg-white px-6 py-3 rounded-2xl flex items-center gap-3 workshop-heading"
+                        className="bg-white px-5 py-3 rounded-2xl flex items-center gap-3 workshop-heading max-w-[min(90vw,34rem)]"
                         style={{
                             boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
                             borderBottom: '4px solid var(--ws-base-grey)',

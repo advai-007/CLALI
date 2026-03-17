@@ -16,13 +16,17 @@ export default function WorkshopHUD({
 }: WorkshopHUDProps) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { totalStars } = useWorkshop();
+    const { totalStars, completedStations, adaptiveState } = useWorkshop();
 
     const isGarageHub = location.pathname === '/workshop';
 
     const displayStars = currentStars !== undefined && maxStars !== undefined
         ? `${currentStars}/${maxStars}`
         : `${totalStars}`;
+
+    const adaptiveLabel = adaptiveState
+        .toLowerCase()
+        .replace(/_/g, ' ');
 
     return (
         <header className="fixed top-0 left-0 w-full z-50 px-4 pt-4 pointer-events-none">
@@ -51,16 +55,28 @@ export default function WorkshopHUD({
                 </div>
 
                 {/* Star Counter */}
-                <div className="pointer-events-auto flex items-center gap-2 bg-white px-5 py-2 rounded-full plastic-up border-4 border-white h-14">
-                    <span
-                        className="material-symbols-outlined text-3xl drop-shadow-sm"
-                        style={{ color: 'var(--ws-yellow)', fontVariationSettings: "'FILL' 1" }}
-                    >
-                        star
-                    </span>
-                    <span className="workshop-math text-[var(--ws-dark)] text-2xl">
-                        {displayStars}
-                    </span>
+                <div className="pointer-events-auto flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2 bg-white px-5 py-2 rounded-full plastic-up border-4 border-white h-14">
+                        <span
+                            className="material-symbols-outlined text-3xl drop-shadow-sm"
+                            style={{ color: 'var(--ws-yellow)', fontVariationSettings: "'FILL' 1" }}
+                        >
+                            star
+                        </span>
+                        <span className="workshop-math text-[var(--ws-dark)] text-2xl">
+                            {displayStars}
+                        </span>
+                        <div className="h-6 w-px bg-slate-200 mx-1" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            {completedStations}/4 fixed
+                        </span>
+                    </div>
+
+                    {!isGarageHub && (
+                        <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/70 text-xs uppercase tracking-[0.2em] text-slate-500">
+                            Assist: {adaptiveLabel}
+                        </div>
+                    )}
                 </div>
             </div>
         </header>

@@ -1,12 +1,14 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Volume2 } from 'lucide-react';
 import WordFactoryHUD from '../components/WordFactoryHUD';
 import ConveyorBelt from '../components/ConveyorBelt';
 import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
+import { useReadAloud } from '../hooks/useReadAloud';
 import { POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
 import { CharacterGuide } from '../../../components/shared/CharacterGuide';
 import '../../workshop/workshop.css';
@@ -53,6 +55,21 @@ export default function WordFactoryLevel2() {
 
     const dropZoneRef = useRef<HTMLDivElement>(null);
 
+    const { speak, isSpeaking, enableReadAloud } = useReadAloud();
+
+    // Auto-speak on new task
+    useEffect(() => {
+        const timer = setTimeout(() => speak(task.word), 500);
+        return () => clearTimeout(timer);
+    }, [currentTaskIdx, speak, task.word]);
+
+    // Adaptive Auto-speak
+    useEffect(() => {
+        if (enableReadAloud && !placedChunk && !isSpeaking) {
+            speak(task.word, true);
+        }
+    }, [enableReadAloud, placedChunk, isSpeaking, speak, task.word]);
+
     // Reset adaptation metrics when task changes
     useEffect(() => {
         resetAdaptation(`level2-${currentTaskIdx}`);
@@ -84,18 +101,9 @@ export default function WordFactoryLevel2() {
 
         return choices.sort().map(chunk => {
             const isCorrect = chunk === correctChunk;
-            let bgColor = '#FCA5A5'; // Default red
-
-            if (isCorrect && isReveal) {
-                bgColor = '#A78BFA'; // Stage 4: bright purple reveal
-            }
-            // Stage 3: glow applied via CSS ring
-
-            return {
-                id: chunk,
-                label: chunk,
-                color: bgColor
-            };
+            let bgColor = '#FCA5A5';
+            if (isCorrect && isReveal) bgColor = '#A78BFA';
+            return { id: chunk, label: chunk, color: bgColor };
         });
     }, [task, assistLevel]);
 
@@ -111,7 +119,6 @@ export default function WordFactoryLevel2() {
         setFeedbackId((prev) => prev + 1);
     }, []);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
     const handleDragStart = useCallback((id: string, _e: any) => {
         setDraggedChunk(id);
         monitor.recordInteraction();
@@ -119,10 +126,8 @@ export default function WordFactoryLevel2() {
     }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (id: string, info: any) => {
             setDraggedChunk(null);
-
             if (!dropZoneRef.current) return;
 
             const dropRect = dropZoneRef.current.getBoundingClientRect();
@@ -132,12 +137,11 @@ export default function WordFactoryLevel2() {
             const dropPoint = info.point;
             const dist = Math.hypot(dropPoint.x - cx, dropPoint.y - cy);
 
-            if (dist < 120) { // Slightly larger drop zone for 2-letter blocks
+            if (dist < 120) {
                 if (id === task.missingChunk) {
                     setPlacedChunk(id);
                     monitor.recordCorrectAction();
                     sendAdaptive({ type: 'CORRECT_ACTION' });
-
                     showFeedback(POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)], 'correct');
 
                     setTimeout(() => {
@@ -156,7 +160,7 @@ export default function WordFactoryLevel2() {
                     showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
                 }
             } else {
-                monitor.recordIncorrectAction();
+                monitor.recordInteraction();
             }
         },
         [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, addStars, trackError]
@@ -176,16 +180,23 @@ export default function WordFactoryLevel2() {
     }, [isReveal, maxAssistControls]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden" onClick={trackClick}>
             <WordFactoryHUD title="Blends & Digraphs" icon="merge_type" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full h-full flex flex-col items-center justify-center min-h-screen relative z-10">
-
-                {/* 3D Machine Backdrop (Wider for Level 2) */}
-                <div className="relative w-full max-w-3xl bg-[#0F172A] rounded-[3rem] p-10 shadow-[0_30px_60px_rgba(0,0,0,0.6),inset_0_4px_0_rgba(255,255,255,0.1)] border-[#334155] mb-12 flex flex-col items-center justify-center h-72">
-
-                    {/* Glowing tubes decoration */}
+                {/* 3D Machine Backdrop */}
+                <div className="relative w-full max-w-3xl bg-[#0F172A] rounded-[3rem] p-10 shadow-[0_30px_60px_rgba(0,0,0,0.6),inset_0_4px_0_rgba(255,255,255,0.1)] border-[#334155] mb-12 flex flex-col items-center justify-center h-80 gap-8">
                     <div className="absolute top-0 w-32 h-4 bg-cyan-500/50 blur shadow-[0_0_30px_#06b6d4]" />
+
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        animate={isSpeaking ? { scale: [1, 1.1, 1] } : {}}
+                        onClick={() => speak(task.word)}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSpeaking ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-indigo-400 hover:bg-slate-700'} border border-slate-700`}
+                    >
+                        <Volume2 className="w-6 h-6" />
+                    </motion.button>
 
                     {/* Word Display Area */}
                     <div className="flex gap-4 items-center justify-center">
@@ -193,7 +204,6 @@ export default function WordFactoryLevel2() {
                             const isMissing = task.missingIndices.includes(index);
                             const isFirstMissing = index === task.missingIndices[0];
 
-                            // Skip the second missing index because the double drop-zone handles it
                             if (isMissing && !isFirstMissing) return null;
 
                             if (isMissing && isFirstMissing) {
@@ -250,13 +260,12 @@ export default function WordFactoryLevel2() {
                                     onDragEnd={(_e, info) => handleDragEnd(item.id, info)}
                                     whileDrag={{ scale: 1.15, zIndex: 9999, transition: { duration: 0.1 } }}
                                     style={{
-                                        width: 'clamp(96px, 18vw, 140px)', // Wider for chunks
+                                        width: 'clamp(96px, 18vw, 140px)',
                                         height: 'clamp(64px, 12vw, 96px)',
                                         backgroundColor: item.color,
                                     }}
                                     animate={shouldAssist ? maxAssistControls : { y: 0 }}
-                                    className={`relative flex items-center justify-center rounded-2xl font-black text-4xl sm:text-5xl lg:text-6xl text-white shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.4)] border-b-6 border-black/30 ws-touch-target pointer-events-auto cursor-grab active:cursor-grabbing tracking-tight ${shouldAssist ? 'ring-8 ring-indigo-400 ring-opacity-60' : ''
-                                        }`}
+                                    className={`relative flex items-center justify-center rounded-2xl font-black text-4xl sm:text-5xl lg:text-6xl text-white shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.4)] border-b-6 border-black/30 ws-touch-target pointer-events-auto cursor-grab active:cursor-grabbing tracking-tight ${shouldAssist ? 'ring-8 ring-indigo-400 ring-opacity-60' : ''}`}
                                 >
                                     {item.label}
                                 </motion.div>
@@ -273,7 +282,6 @@ export default function WordFactoryLevel2() {
                 </div>
             </main>
 
-            {/* Character Guide at the bottom */}
             <div className="fixed bottom-4 left-4 z-40">
                 <CharacterGuide assistLevel={assistLevel} />
             </div>
@@ -284,13 +292,10 @@ export default function WordFactoryLevel2() {
                 <VictoryModal
                     title="Blends Master!"
                     isOpen={true} starsEarned={1}
-                    onNext={() => {
-                        navigate('/word-factory/level3');
-                    }}
+                    onNext={() => navigate('/word-factory/level3')}
                     onClose={() => navigate('/dashboard')}
                 />
             )}
         </div>
     );
 }
-

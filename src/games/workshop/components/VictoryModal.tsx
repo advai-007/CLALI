@@ -8,6 +8,7 @@ interface VictoryModalProps {
     title?: string;
     subtitle?: string;
     nextRoute?: string;
+    nextLabel?: string;
     onNext?: () => void;
     onClose?: () => void;
 }
@@ -20,10 +21,12 @@ export default function VictoryModal({
     title = 'Great Work!',
     subtitle = 'Workshop Fixed',
     nextRoute,
+    nextLabel,
     onNext,
     onClose,
 }: VictoryModalProps) {
     const navigate = useNavigate();
+    const primaryLabel = nextLabel ?? (nextRoute === '/workshop' ? 'Back to Garage' : 'Next Repair');
 
     const handleNext = useCallback(() => {
         if (onNext) onNext();
@@ -150,7 +153,7 @@ export default function VictoryModal({
                                 className="w-full py-4 rounded-xl workshop-heading text-xl text-white plastic-btn flex items-center justify-center gap-2"
                                 style={{ backgroundColor: 'var(--ws-green)' }}
                             >
-                                <span>Next Repair</span>
+                                <span>{primaryLabel}</span>
                                 <span className="material-symbols-outlined">arrow_forward</span>
                             </button>
                             <button

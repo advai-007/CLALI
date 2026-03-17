@@ -120,7 +120,7 @@ export default function WordMatchingGame() {
     }, [answered, task, taskIdx, monitor, sendAdaptive, showFeedback, addStars, trackClick, trackError]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
+    <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden" onClick={trackClick}>
             <WordFactoryHUD title="Word Matching" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full min-h-screen flex flex-col items-center justify-center relative z-10 gap-8">

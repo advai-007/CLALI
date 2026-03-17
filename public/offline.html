@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#a7d1f6" />
+    <title>CLALI Offline</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Lexend", system-ui, sans-serif;
+        background: #f8fafc;
+        color: #2d3748;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at top, rgba(167, 209, 246, 0.5), transparent 45%),
+          linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%);
+        padding: 24px;
+      }
+
+      main {
+        max-width: 420px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(125, 181, 230, 0.25);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 18px 45px -24px rgba(45, 55, 72, 0.35);
+        text-align: center;
+      }
+
+      img {
+        width: 88px;
+        height: 88px;
+        border-radius: 22px;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 1.75rem;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/pwa-192x192.png" alt="CLALI logo" />
+      <h1>You're offline</h1>
+      <p>CLALI is still installed, but this screen needs an internet connection to load fresh content.</p>
+    </main>
+  </body>
+</html>

@@ -1,12 +1,14 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Volume2 } from 'lucide-react';
 import WordFactoryHUD from '../components/WordFactoryHUD';
 import ConveyorBelt from '../components/ConveyorBelt';
 import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
+import { useReadAloud } from '../hooks/useReadAloud';
 import { POSITIVE_MESSAGES } from '../../workshop/workshopTypes';
 import { CharacterGuide } from '../../../components/shared/CharacterGuide';
 import '../../workshop/workshop.css';
@@ -22,7 +24,6 @@ const LEVEL_TASKS = [
     { id: 'fan', word: 'FAN', icon: 'mode_fan', distractors: ['B', 'T', 'P'] },
     { id: 'cup', word: 'CUP', icon: 'coffee', distractors: ['S', 'R', 'T'] },
     { id: 'hat', word: 'HAT', icon: 'face', distractors: ['B', 'C', 'M'] },
-    { id: 'log', word: 'LOG', icon: 'forest', distractors: ['D', 'F', 'P'] },
     { id: 'log', word: 'LOG', icon: 'forest', distractors: ['D', 'F', 'P'] },
     { id: 'jam', word: 'JAM', icon: 'breakfast_dining', distractors: ['H', 'R', 'T'] },
     { id: 'rib', word: 'RIB', icon: 'lunch_dining', distractors: ['L', 'D', 'N'] },
@@ -45,50 +46,55 @@ export default function WordFactoryLevel3() {
     const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
     const task = LEVEL_TASKS[currentTaskIdx];
 
-    // Array of placed letters matching the word length
     const [placedLetters, setPlacedLetters] = useState<(string | null)[]>([]);
-
     const [feedbackMsg, setFeedbackMsg] = useState('');
     const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | 'hint'>('correct');
     const [feedbackId, setFeedbackId] = useState(0);
     const [showVictory, setShowVictory] = useState(false);
     const [draggedLetter, setDraggedLetter] = useState<string | null>(null);
 
-    // Refs for all slots
     const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const { speak, isSpeaking, enableReadAloud } = useReadAloud();
+
+    // Auto-speak on new task
+    useEffect(() => {
+        const timer = setTimeout(() => speak(task.word), 500);
+        return () => clearTimeout(timer);
+    }, [currentTaskIdx, speak, task.word]);
+
+    // Adaptive Auto-speak
+    useEffect(() => {
+        const hasUnplaced = placedLetters.some(l => l === null);
+        if (enableReadAloud && hasUnplaced && !isSpeaking) {
+            speak(task.word, true);
+        }
+    }, [enableReadAloud, placedLetters, isSpeaking, speak, task.word]);
 
     useEffect(() => {
         setCurrentLevel(3);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPlacedLetters(new Array(task.word.length).fill(null));
         monitor.startTrackingTask();
         return () => monitor.stopTracking();
     }, [currentTaskIdx, task.word.length, monitor, setCurrentLevel]);
 
-    // Reset adaptation metrics when task changes
     useEffect(() => {
         resetAdaptation(`level3-${currentTaskIdx}`);
     }, [currentTaskIdx]);
 
-    // Track mouse movement for jitter detection
     useEffect(() => {
         window.addEventListener('mousemove', trackMouseMove);
         return () => window.removeEventListener('mousemove', trackMouseMove);
     }, [trackMouseMove]);
 
-    // 4-stage assist flags
     const isReduced = assistLevel >= 2;
     const isReveal = assistLevel >= 4;
 
-    // Identify the next empty slot for Guided / Max Assist
     const nextEmptySlotIdx = placedLetters.findIndex(l => l === null);
     const nextCorrectLetter = nextEmptySlotIdx !== -1 ? task.word[nextEmptySlotIdx] : null;
 
-    // Available letters for the belt
     const beltItems = useMemo(() => {
         const requiredLetters = task.word.split('');
-
-        // Compute which letters are still needed
         const neededLetters = [...requiredLetters];
         placedLetters.forEach(letter => {
             if (letter) {
@@ -98,31 +104,19 @@ export default function WordFactoryLevel3() {
         });
 
         let choices = [...neededLetters];
-
         if (isReveal) {
-            choices = [...neededLetters]; // Stage 4: only required letters, no distractors
+            choices = [...neededLetters];
         } else if (isReduced) {
-            // Stage 2: include just one distractor
             choices = [...neededLetters, task.distractors[0]];
         } else {
             choices = [...neededLetters, ...task.distractors];
         }
 
-        // Dedup and sort
         return choices.sort().map(letter => {
             const isTarget = letter === nextCorrectLetter;
-            let bgColor = '#6EE7B7'; // Default mint green
-
-            if (isTarget && isReveal) {
-                bgColor = '#34D399'; // Stage 4: bright emerald
-            }
-            // Stage 3 glow applied via CSS ring
-
-            return {
-                id: letter,
-                label: letter,
-                color: bgColor
-            };
+            let bgColor = '#6EE7B7';
+            if (isTarget && isReveal) bgColor = '#34D399';
+            return { id: letter, label: letter, color: bgColor };
         });
     }, [task, assistLevel, placedLetters, nextCorrectLetter]);
 
@@ -139,13 +133,11 @@ export default function WordFactoryLevel3() {
     }, [monitor, trackClick]);
 
     const handleDragEnd = useCallback(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (id: string, info: any) => {
             setDraggedLetter(null);
-
             const dropPoint = info.point;
             let closestSlot = -1;
-            let minDist = 100; // Drop radius
+            let minDist = 100;
 
             slotRefs.current.forEach((el, index) => {
                 if (!el || placedLetters[index] !== null) return;
@@ -161,19 +153,14 @@ export default function WordFactoryLevel3() {
             });
 
             if (closestSlot !== -1) {
-                // If guided/max assist, enforce correct letter order or exact match for that slot
                 const correctLetterForSlot = task.word[closestSlot];
-
                 if (id === correctLetterForSlot) {
-                    // Correct placement
                     const newPlaced = [...placedLetters];
                     newPlaced[closestSlot] = id;
                     setPlacedLetters(newPlaced);
-
                     monitor.recordCorrectAction();
                     sendAdaptive({ type: 'CORRECT_ACTION' });
 
-                    // Check if word is fully assembled
                     if (newPlaced.join('') === task.word) {
                         showFeedback(POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)], 'correct');
                         setTimeout(() => {
@@ -186,19 +173,18 @@ export default function WordFactoryLevel3() {
                         }, 1500);
                     }
                 } else {
-                    // Wrong letter for this slot
                     monitor.recordIncorrectAction();
                     sendAdaptive({ type: 'INCORRECT_ACTION' });
                     trackError();
                     showFeedback("Not quite! Try a different letter.", 'incorrect');
                 }
             } else {
-                // Dropped nowhere
-                monitor.recordIncorrectAction();
+                monitor.recordInteraction();
             }
         },
         [task, currentTaskIdx, monitor, sendAdaptive, showFeedback, placedLetters, addStars, trackError]
     );
+
     const maxAssistControls = useAnimation();
     useEffect(() => {
         if (isReveal) {
@@ -213,15 +199,24 @@ export default function WordFactoryLevel3() {
     }, [isReveal, maxAssistControls]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden" onClick={trackClick}>
             <WordFactoryHUD title="Spell the Word" icon="spellcheck" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full h-full flex flex-col items-center justify-center min-h-screen relative z-10">
-
-                <div className="relative w-full max-w-3xl bg-indigo-950 rounded-[3rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_4px_0_rgba(255,255,255,0.1)] border-8 border-indigo-900 mb-12 flex flex-col items-center justify-center min-h-[300px]">
+                <div className="relative w-full max-w-3xl bg-indigo-950 rounded-[3rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_4px_0_rgba(255,255,255,0.1)] border-8 border-indigo-900 mb-12 flex flex-col items-center justify-center min-h-[400px] gap-6">
+                    
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        animate={isSpeaking ? { scale: [1, 1.1, 1] } : {}}
+                        onClick={() => speak(task.word)}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSpeaking ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-emerald-400 hover:bg-slate-700'} border border-slate-700`}
+                    >
+                        <Volume2 className="w-6 h-6" />
+                    </motion.button>
 
                     {/* Picture Hint */}
-                    <div className="mb-8 w-32 h-32 bg-white/10 rounded-full flex items-center justify-center shadow-inner border-2 border-white/20">
+                    <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center shadow-inner border-2 border-white/20">
                         <span className="material-symbols-outlined text-white text-7xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
                             {task.icon}
                         </span>
@@ -267,7 +262,6 @@ export default function WordFactoryLevel3() {
                     <div className="absolute bottom-0 w-full flex justify-center items-center gap-6 pb-6 pointer-events-none z-50">
                         {beltItems.map((item) => {
                             const isAssistTarget = item.id === nextCorrectLetter && isReveal;
-
                             return (
                                 <motion.div
                                     key={`drag-${item.id}`}
@@ -283,8 +277,7 @@ export default function WordFactoryLevel3() {
                                         backgroundColor: item.color,
                                     }}
                                     animate={isAssistTarget ? maxAssistControls : { y: 0 }}
-                                    className={`relative flex items-center justify-center rounded-[1.5rem] font-black text-5xl lg:text-6xl text-[#1F2937] shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_4px_0_rgba(255,255,255,0.6)] border-b-8 border-black/20 ws-touch-target pointer-events-auto cursor-grab active:cursor-grabbing ${isAssistTarget ? 'ring-8 ring-emerald-400 ring-opacity-60' : ''
-                                        }`}
+                                    className={`relative flex items-center justify-center rounded-[1.5rem] font-black text-5xl lg:text-6xl text-[#1F2937] shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_4px_0_rgba(255,255,255,0.6)] border-b-8 border-black/20 ws-touch-target pointer-events-auto cursor-grab active:cursor-grabbing ${isAssistTarget ? 'ring-8 ring-emerald-400 ring-opacity-60' : ''}`}
                                 >
                                     {item.label}
                                 </motion.div>
@@ -296,12 +289,11 @@ export default function WordFactoryLevel3() {
                         items={beltItems}
                         onPointerDown={() => { }}
                         activeDragId={draggedLetter}
-                        placedIds={[]} // Belt handles rendering gaps, but since we map needed letters dynamically, we don't pass placedIds here to hide them, they just get removed from beltItems array
+                        placedIds={[]}
                     />
                 </div>
             </main>
 
-            {/* Character Guide at the bottom */}
             <div className="fixed bottom-4 left-4 z-40">
                 <CharacterGuide assistLevel={assistLevel} />
             </div>
@@ -312,13 +304,10 @@ export default function WordFactoryLevel3() {
                 <VictoryModal
                     title="Spelling Bee!"
                     isOpen={true} starsEarned={1}
-                    onNext={() => {
-                        navigate('/word-factory/level4');
-                    }}
+                    onNext={() => navigate('/word-factory/level4')}
                     onClose={() => navigate('/dashboard')}
                 />
             )}
         </div>
     );
 }
-

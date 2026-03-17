@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Volume2 } from 'lucide-react';
 import WordFactoryHUD from '../components/WordFactoryHUD';
 import VictoryModal from '../../workshop/components/VictoryModal';
 import FeedbackToast from '../../workshop/components/FeedbackToast';
 import { useReading } from '../ReadingContext';
 import { useReadingMonitor } from '../useReadingMonitor';
+import { useReadAloud } from '../hooks/useReadAloud';
 import { POSITIVE_MESSAGES, ENCOURAGE_MESSAGES } from '../../workshop/workshopTypes';
 import { CharacterGuide } from '../../../components/shared/CharacterGuide';
 import '../../workshop/workshop.css';
@@ -49,32 +51,46 @@ export default function WordFactoryLevel5() {
 
     const task = LEVEL_TASKS[taskIdx];
 
-    // Reset adaptation metrics when task changes
+    const { speak, isSpeaking, enableReadAloud } = useReadAloud();
+
+    const getFullSentence = useCallback((overrideAnswer?: string) => {
+        const text = `${task.before} ${overrideAnswer || 'blank'} ${task.after}`;
+        return text;
+    }, [task]);
+
+    // Auto-speak on new task
+    useEffect(() => {
+        const timer = setTimeout(() => speak(getFullSentence()), 500);
+        return () => clearTimeout(timer);
+    }, [taskIdx, speak, getFullSentence]);
+
+    // Adaptive Auto-speak
+    useEffect(() => {
+        if (enableReadAloud && !chosen && !isSpeaking) {
+            speak(getFullSentence(), true);
+        }
+    }, [enableReadAloud, chosen, isSpeaking, speak, getFullSentence]);
+
     useEffect(() => {
         resetAdaptation(`level5-${taskIdx}`);
     }, [taskIdx]);
 
-    // Track mouse movement for jitter detection
     useEffect(() => {
         window.addEventListener('mousemove', trackMouseMove);
         return () => window.removeEventListener('mousemove', trackMouseMove);
     }, [trackMouseMove]);
 
-    // 4-stage assist flags
     const isReduced = assistLevel >= 2;
     const isGlowing = assistLevel >= 3;
     const isReveal = assistLevel >= 4;
 
-    // Filter answer choices by stage
     const displayChoices = (() => {
         const all = [...task.choices];
         if (isReveal) {
-            // Stage 4: only 2 choices (answer + 1 distractor)
             const dist = all.find(c => c !== task.answer)!;
             return [task.answer, dist].sort((a, b) => a.localeCompare(b));
         }
         if (isReduced) {
-            // Stage 2: 3 choices
             const distractors = all.filter(c => c !== task.answer).slice(0, 2);
             return [task.answer, ...distractors].sort((a, b) => a.localeCompare(b));
         }
@@ -100,6 +116,7 @@ export default function WordFactoryLevel5() {
         setChosen(choice);
 
         if (choice === task.answer) {
+            speak(getFullSentence(choice)); // Speak correct completion
             monitor.recordCorrectAction();
             sendAdaptive({ type: 'CORRECT_ACTION' });
             showFeedback(POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)], 'correct');
@@ -111,7 +128,7 @@ export default function WordFactoryLevel5() {
                     addStars(3);
                     setShowVictory(true);
                 }
-            }, 1400);
+            }, 2000); // Wait longer for full sentence read
         } else {
             monitor.recordIncorrectAction();
             sendAdaptive({ type: 'INCORRECT_ACTION' });
@@ -119,22 +136,20 @@ export default function WordFactoryLevel5() {
             showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
             setTimeout(() => setChosen(null), 1000);
         }
-    }, [chosen, task, taskIdx, monitor, sendAdaptive, showFeedback, addStars, trackClick, trackError]);
+    }, [chosen, task, taskIdx, monitor, sendAdaptive, showFeedback, addStars, trackClick, trackError, speak, getFullSentence]);
 
     return (
-        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden font-sans" onClick={trackClick}>
+        <div className="relative min-h-screen bg-[var(--ws-base-grey)] overflow-hidden" onClick={trackClick}>
             <WordFactoryHUD title="Fill the Sentence" monitor={monitor} />
 
             <main className="pt-24 pb-8 px-4 w-full min-h-screen flex flex-col items-center justify-center relative z-10 gap-8">
 
-                {/* Progress dots */}
                 <div className="flex gap-2">
                     {LEVEL_TASKS.map((_, i) => (
                         <div key={i} className={`w-3 h-3 rounded-full transition-colors ${i < taskIdx ? 'bg-green-400' : i === taskIdx ? 'bg-yellow-400' : 'bg-slate-600'}`} />
                     ))}
                 </div>
 
-                {/* Sentence card */}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={task.id}
@@ -142,11 +157,20 @@ export default function WordFactoryLevel5() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.4 }}
-                        className="w-full max-w-2xl bg-[#334155] rounded-3xl p-8 shadow-[0_20px_40px_rgba(0,0,0,0.5),inset_0_2px_0_rgba(255,255,255,0.1)] border-8 border-[#1E293B] flex flex-col items-center gap-4"
+                        className="w-full max-w-2xl bg-[#334155] rounded-3xl p-8 shadow-[0_20px_40px_rgba(0,0,0,0.5),inset_0_2px_0_rgba(255,255,255,0.1)] border-8 border-[#1E293B] flex flex-col items-center gap-6"
                     >
                         <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Complete the sentence</p>
+                        
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            animate={isSpeaking ? { scale: [1, 1.1, 1] } : {}}
+                            onClick={() => speak(getFullSentence(chosen || undefined))}
+                            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isSpeaking ? 'bg-yellow-500 text-white' : 'bg-slate-700 text-yellow-500 hover:bg-slate-600'} border border-slate-600`}
+                        >
+                            <Volume2 className="w-6 h-6" />
+                        </motion.button>
 
-                        {/* Sentence with blank */}
                         <div className="flex flex-wrap items-center justify-center gap-3 text-4xl font-black text-white text-center leading-relaxed">
                             <span>{task.before}</span>
                             <AnimatePresence mode="wait">
@@ -179,13 +203,11 @@ export default function WordFactoryLevel5() {
                     </motion.div>
                 </AnimatePresence>
 
-                {/* Choice buttons */}
                 <div className="grid grid-cols-2 gap-4 w-full max-w-md">
                     {displayChoices.map((choice) => {
                         const isCorrect = choice === task.answer;
                         const isAnswered = chosen !== null;
                         const wasChosen = chosen === choice;
-
                         const shouldPulse = !isAnswered && isCorrect && isReveal;
                         const isMaxAssist = isCorrect && isReveal && !isAnswered;
 
@@ -195,7 +217,6 @@ export default function WordFactoryLevel5() {
                         } else if (isAnswered && isCorrect) {
                             bg = 'bg-green-500/40 border-green-400 text-white';
                         } else if (!isAnswered && isGlowing && isCorrect) {
-                            // Stage 3: soft glow ring on correct answer
                             bg = 'bg-slate-700 border-amber-300 text-white shadow-[0_0_25px_rgba(251,191,36,0.5)] ring-2 ring-amber-300/60';
                         } else if (isMaxAssist) {
                             bg = 'bg-yellow-500 border-yellow-400 text-white shadow-[0_0_30px_rgba(234,179,8,0.6)]';
@@ -224,7 +245,6 @@ export default function WordFactoryLevel5() {
                 </div>
             </main>
 
-            {/* Character Guide at the bottom */}
             <div className="fixed bottom-4 left-4 z-40">
                 <CharacterGuide assistLevel={assistLevel} />
             </div>

@@ -142,5 +142,26 @@ CREATE INDEX IF NOT EXISTS idx_learning_progress_student
 CREATE INDEX IF NOT EXISTS idx_learning_progress_module
     ON public.learning_progress (module_id);
 
-CREATE INDEX IF NOT EXISTS idx_content_versions_module
-    ON public.content_versions (module_id, adaptation_type);
+-- ── 7. adaptation_events RLS ──────────────────────────────────
+-- Enable RLS
+ALTER TABLE public.adaptation_events ENABLE ROW LEVEL SECURITY;
+
+-- Clean up existing policies if any to prevent "already exists" errors
+DROP POLICY IF EXISTS "adaptation_events_insert_all" ON public.adaptation_events;
+DROP POLICY IF EXISTS "adaptation_events_read_all" ON public.adaptation_events;
+DROP POLICY IF EXISTS "adaptation_events_anon_read" ON public.adaptation_events;
+DROP POLICY IF EXISTS "adaptation_events_teacher_read" ON public.adaptation_events;
+
+-- Allow students (anon) and teachers (authenticated) to insert events
+-- Since students aren't using Supabase Auth, we allow anon inserts.
+CREATE POLICY "adaptation_events_insert_all"
+    ON public.adaptation_events FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+
+-- Allow anon and authenticated to select events
+-- This is necessary for students to see their own history and teachers to see dashboard data
+CREATE POLICY "adaptation_events_read_all"
+    ON public.adaptation_events FOR SELECT
+    TO anon, authenticated
+    USING (true);

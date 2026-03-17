@@ -40,6 +40,7 @@ export default function WiringPanel() {
         return Math.random() - 0.5;
     }));
     const [activeDrag, setActiveDrag] = useState<string | null>(null);
+    const [selectedWire, setSelectedWire] = useState<string | null>(null);
     const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
     const [feedbackMsg, setFeedbackMsg] = useState('');
     const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect' | 'hint'>('correct');
@@ -48,20 +49,23 @@ export default function WiringPanel() {
     const [errorCount, setErrorCount] = useState(0);
     const [taskStartTime] = useState(() => Date.now());
 
-    const sourceRefs = useRef<Record<string, HTMLDivElement | null>>({});
-    const destRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const sourceRefs = useRef<Record<string, HTMLElement | null>>({});
+    const destRefs = useRef<Record<string, HTMLElement | null>>({});
     const boardRef = useRef<HTMLDivElement | null>(null);
 
     const completedCount = Object.values(connections).filter(Boolean).length;
     const totalWires = WIRES.length;
+    const activeWireId = activeDrag ?? selectedWire;
 
     const hintText = useMemo(() => {
         if (adaptiveState === AdaptiveState.NORMAL) return undefined;
         const nextWire = WIRES.find((w) => !connections[w.id]);
         if (!nextWire) return undefined;
         if (adaptiveState === AdaptiveState.GUIDED) return `Connect the ${nextWire.id} wire to the glowing ${nextWire.id} port!`;
-        return 'Match each wire color to its matching port!';
-    }, [adaptiveState, connections]);
+        return activeWireId
+            ? `Finish connecting the ${activeWireId} wire.`
+            : 'Drag a wire, or tap a wire and then tap its matching port.';
+    }, [adaptiveState, connections, activeWireId]);
 
     const showFeedback = useCallback((msg: string, type: 'correct' | 'incorrect' | 'hint') => {
         setFeedbackMsg(msg);
@@ -75,6 +79,41 @@ export default function WiringPanel() {
         return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     };
 
+    const clearInteraction = useCallback(() => {
+        setActiveDrag(null);
+        setSelectedWire(null);
+        setDragPos(null);
+    }, []);
+
+    const attemptConnection = useCallback((sourceId: string, targetId: string) => {
+        if (connections[sourceId]) {
+            clearInteraction();
+            return;
+        }
+
+        if (sourceId === targetId) {
+            setConnections((prev) => ({ ...prev, [targetId]: true }));
+            monitor.recordCorrectAction();
+            sendAdaptive({ type: 'CORRECT_ACTION' });
+            showFeedback(POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)], 'correct');
+
+            if (completedCount + 1 >= totalWires) {
+                setTimeout(() => setShowVictory(true), 800);
+            }
+        } else {
+            monitor.recordIncorrectAction();
+            sendAdaptive({ type: 'INCORRECT_ACTION' });
+            setErrorCount((previous) => previous + 1);
+            showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
+
+            if (monitor.shouldEscalate()) {
+                sendAdaptive({ type: 'DIFFICULTY_DETECTED' });
+            }
+        }
+
+        clearInteraction();
+    }, [connections, clearInteraction, monitor, sendAdaptive, showFeedback, completedCount, totalWires]);
+
     const handleSourcePointerDown = useCallback((wireId: string) => {
         if (connections[wireId]) return;
         setActiveDrag(wireId);
@@ -82,6 +121,13 @@ export default function WiringPanel() {
         const center = getCenter(sourceRefs.current[wireId]);
         if (center) setDragPos(center);
     }, [connections, monitor]);
+
+    const handleSourcePointerUp = useCallback((wireId: string) => {
+        if (connections[wireId]) return;
+        setActiveDrag(null);
+        setDragPos(null);
+        setSelectedWire((previous) => previous === wireId ? null : wireId);
+    }, [connections]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent) => {
         if (!activeDrag) return;
@@ -99,40 +145,22 @@ export default function WiringPanel() {
             const center = getCenter(destEl);
             if (!center) continue;
             if (Math.hypot(dragPos.x - center.x, dragPos.y - center.y) < 60) {
-                if (wire.id === activeDrag) {
-                    // Correct match
-                    setConnections((prev) => ({ ...prev, [wire.id]: true }));
-                    monitor.recordCorrectAction();
-                    sendAdaptive({ type: 'CORRECT_ACTION' });
-
-                    showFeedback(POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)], 'correct');
-                    matched = true;
-
-                    const newCount = completedCount + 1;
-                    if (newCount >= totalWires) {
-                        setTimeout(() => setShowVictory(true), 800);
-                    }
-                } else {
-                    // Wrong match
-                    monitor.recordIncorrectAction();
-                    sendAdaptive({ type: 'INCORRECT_ACTION' });
-                    setErrorCount((p) => p + 1);
-
-                    showFeedback(ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)], 'incorrect');
-                    if (monitor.shouldEscalate()) sendAdaptive({ type: 'DIFFICULTY_DETECTED' });
-                    matched = true;
-                }
+                attemptConnection(activeDrag, wire.id);
+                matched = true;
                 break;
             }
         }
 
         if (!matched) {
-            // Dropped in empty space
+            setActiveDrag(null);
+            setDragPos(null);
         }
+    }, [activeDrag, dragPos, attemptConnection]);
 
-        setActiveDrag(null);
-        setDragPos(null);
-    }, [activeDrag, dragPos, completedCount, totalWires, monitor, sendAdaptive, showFeedback]);
+    const handleDestinationSelect = useCallback((wireId: string) => {
+        if (!selectedWire) return;
+        attemptConnection(selectedWire, wireId);
+    }, [selectedWire, attemptConnection]);
 
     const handleComplete = useCallback(() => {
         const duration = Date.now() - taskStartTime;
@@ -261,10 +289,14 @@ export default function WiringPanel() {
                                             }}
                                             whileTap={isConnected ? {} : { scale: 0.95 }}
                                             onPointerDown={() => handleSourcePointerDown(wire.id)}
+                                            onPointerUp={(event) => {
+                                                event.stopPropagation();
+                                                handleSourcePointerUp(wire.id);
+                                            }}
                                         >
                                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black/40 rounded-full flex items-center justify-center" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
                                                 <span className="material-symbols-outlined text-2xl sm:text-3xl" style={{ color: wire.hexColor, opacity: isConnected ? 1 : 0.5 }}>
-                                                    {isConnected ? 'check' : 'bolt'}
+                                                    {isConnected ? 'check' : selectedWire === wire.id ? 'radio_button_checked' : 'bolt'}
                                                 </span>
                                             </div>
                                         </motion.div>
@@ -300,13 +332,15 @@ export default function WiringPanel() {
                             {destOrder.map((wire) => {
                                 const isConnected = connections[wire.id];
                                 const shouldGlow = !isConnected && (
-                                    (adaptiveState === AdaptiveState.GUIDED && activeDrag === wire.id) ||
-                                    (adaptiveState === AdaptiveState.REDUCED_COMPLEXITY && activeDrag === wire.id)
+                                    (adaptiveState === AdaptiveState.GUIDED && activeWireId === wire.id) ||
+                                    (adaptiveState === AdaptiveState.REDUCED_COMPLEXITY && activeWireId === wire.id) ||
+                                    activeWireId === wire.id
                                 );
 
                                 return (
                                     <div key={`dest-${wire.id}`} className="flex items-center gap-3 flex-row-reverse">
-                                        <div
+                                        <button
+                                            type="button"
                                             ref={(el) => { destRefs.current[wire.id] = el; }}
                                             className={`relative w-18 h-18 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center ws-touch-target transition-all duration-300`}
                                             style={{
@@ -320,6 +354,7 @@ export default function WiringPanel() {
                                                 transform: shouldGlow ? 'scale(1.05)' : 'scale(1)',
                                                 outline: shouldGlow ? `4px solid ${wire.hexColor}` : 'none',
                                             }}
+                                            onClick={() => handleDestinationSelect(wire.id)}
                                         >
                                             <div
                                                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
@@ -333,7 +368,7 @@ export default function WiringPanel() {
                                                     {isConnected ? 'check' : 'bolt'}
                                                 </span>
                                             </div>
-                                        </div>
+                                        </button>
                                         <span className="text-white/50 font-bold text-sm sm:text-lg hidden md:block select-none">PORT {WIRES.indexOf(wire) + 1}</span>
                                     </div>
                                 );

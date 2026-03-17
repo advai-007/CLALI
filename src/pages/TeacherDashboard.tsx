@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../utils/supabase';
 import { studentMetricsApi, type ClassMetrics } from '../services/studentMetricsApi';
+import TeacherSidebar from '../components/TeacherSidebar';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Helpers ───────────────────────────────────────────────────────
 function formatLastActive(dateStr: string): string {
@@ -36,19 +38,11 @@ function loadDotColor(load: number) {
 // ─── Component ─────────────────────────────────────────────────────
 const TeacherDashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { signOut, user } = useAuth();
-    const [isDark, setIsDark] = useState(false);
+    const { user } = useAuth();
+    const { isDark } = useTheme();
     const [teacherName, setTeacherName] = useState('');
     const [classData, setClassData] = useState<ClassMetrics[]>([]);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [isDark]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -72,9 +66,13 @@ const TeacherDashboard: React.FC = () => {
         fetchDashboardData();
     }, [user]);
 
-    const handleLogout = async () => {
-        await signOut();
-        navigate('/');
+    const openStudentAnalysis = (studentId?: string, classId?: string) => {
+        const params = new URLSearchParams();
+        if (studentId) params.set('studentId', studentId);
+        if (classId) params.set('classId', classId);
+
+        const query = params.toString();
+        navigate(query ? `/student-analysis?${query}` : '/student-analysis');
     };
 
     // ── Aggregations ──────────────────────────────────────────────
@@ -117,87 +115,29 @@ const TeacherDashboard: React.FC = () => {
     }
 
     return (
-        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300 font-display min-h-screen">
+        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300 font-display min-h-screen text-[13px] md:text-sm">
             <div className="flex h-screen overflow-hidden">
                 {/* ── Sidebar ── */}
-                <aside className="w-20 bg-[#0c1427] flex flex-col items-center py-6 gap-8 z-50">
-                    <div className="w-10 h-10 bg-[#3b82f6] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                        <span className="material-icons-round">psychology</span>
-                    </div>
-                    <nav className="flex flex-col gap-6 flex-1">
-                        <button
-                            className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-white hover:bg-[#3b82f6] hover:shadow-lg hover:shadow-blue-500/20 hover:scale-110 active:scale-95 transition-all duration-300"
-                            onClick={() => navigate('/teacher-dashboard')}
-                            title="Dashboard"
-                        >
-                            <span className="material-icons-round">dashboard</span>
-                        </button>
-                        <button
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300"
-                            onClick={() => navigate('/student-analysis')}
-                            title="Student Analysis"
-                        >
-                            <span className="material-icons-round">groups</span>
-                        </button>
-                        <button
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300"
-                            onClick={() => navigate('/class-management')}
-                            title="Class Management"
-                        >
-                            <span className="material-icons-round">assignment</span>
-                        </button>
-                        <button
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-110 active:scale-95 transition-all duration-300"
-                            onClick={() => navigate('/add-student')}
-                            title="Add Student"
-                        >
-                            <span className="material-icons-round">person_add</span>
-                        </button>
-                    </nav>
-                    <div className="flex flex-col gap-6">
-                        <button
-                            onClick={handleLogout}
-                            title="Logout"
-                            className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/20 hover:scale-110 active:scale-95 transition-all duration-300"
-                        >
-                            <span className="material-icons-round">logout</span>
-                        </button>
-                        <img
-                            alt="Profile Avatar"
-                            className="w-10 h-10 rounded-xl object-cover border-2 border-slate-700 hover:border-[#3b82f6] hover:scale-110 cursor-pointer transition-all duration-300"
-                            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher"
-                        />
-                    </div>
-                </aside>
+                <TeacherSidebar />
 
                 {/* ── Main ── */}
-                <main className="flex-1 overflow-y-auto p-8 relative">
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
                     <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl -z-10"></div>
 
                     {/* Header */}
-                    <header className="flex justify-between items-center mb-8">
+                    <header className="flex justify-between items-center mb-6 md:mb-8">
                         <div>
-                            <h1 className="text-3xl font-bold dark:text-white">
+                            <h1 className="text-2xl md:text-3xl font-bold dark:text-white">
                                 Welcome back, {teacherName || 'Teacher'}
                             </h1>
                             <p className="text-slate-500 dark:text-slate-400 mt-1">
                                 Real-time cognitive load monitoring across all your classes.
                             </p>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button
-                                className="w-10 h-10 rounded-full flex items-center justify-center bg-card-light dark:bg-card-dark shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all duration-300"
-                                onClick={() => setIsDark(!isDark)}
-                            >
-                                <span className="material-icons-round hover:rotate-12 transition-transform duration-300">
-                                    {isDark ? 'light_mode' : 'dark_mode'}
-                                </span>
-                            </button>
-                        </div>
                     </header>
 
                     {/* ── Summary Stats Bar ── */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
                         {[
                             {
                                 label: 'Total Students',
@@ -230,44 +170,44 @@ const TeacherDashboard: React.FC = () => {
                         ].map(stat => (
                             <div
                                 key={stat.label}
-                                className={`bg-card-light dark:bg-card-dark rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300`}
+                                className={`bg-card-light dark:bg-card-dark rounded-2xl p-4 md:p-5 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300`}
                             >
-                                <div className="flex items-start justify-between mb-3">
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{stat.label}</span>
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center
+                                <div className="flex items-start justify-between mb-2 md:mb-3">
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</span>
+                                    <div className={`w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center
                                         ${stat.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}
                                         ${stat.color === 'emerald' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : ''}
                                         ${stat.color === 'amber' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : ''}
                                         ${stat.color === 'rose' ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : ''}
                                     `}>
-                                        <span className="material-icons-round text-lg">{stat.icon}</span>
+                                        <span className="material-icons-round text-base md:text-lg">{stat.icon}</span>
                                     </div>
                                 </div>
-                                <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                                <div className="text-[11px] text-slate-400">{stat.sub}</div>
+                                <div className="text-2xl md:text-3xl font-bold mb-1 dark:text-white">{stat.value}</div>
+                                <div className="text-[10px] md:text-[11px] text-slate-400">{stat.sub}</div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-12 gap-6">
+                    <div className="grid grid-cols-12 gap-4 md:gap-6">
 
                         {/* ── Student Snapshot Table ── */}
-                        <div className="col-span-12 xl:col-span-8 bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                            <div className="flex justify-between items-center mb-5">
+                        <div className="col-span-12 xl:col-span-8 bg-card-light dark:bg-card-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                            <div className="flex justify-between items-center mb-5 md:mb-6">
                                 <div className="flex items-center gap-2">
-                                    <h2 className="font-bold text-lg">Student Snapshot</h2>
-                                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-[#3b82f6] text-[10px] font-bold rounded uppercase tracking-wider">Live</span>
+                                    <h2 className="font-bold text-base md:text-lg dark:text-white">Student Snapshot</h2>
+                                    <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-[#3b82f6] text-[9px] md:text-[10px] font-bold rounded uppercase tracking-wider">Live</span>
                                 </div>
                                 <button
-                                    onClick={() => navigate('/student-analysis')}
-                                    className="text-xs font-semibold text-[#3b82f6] hover:underline flex items-center gap-1"
+                                    onClick={() => openStudentAnalysis(allStudents[0]?.participant_id)}
+                                    className="text-[11px] md:text-xs font-semibold text-[#3b82f6] hover:underline flex items-center gap-1"
                                 >
                                     Full Analysis <span className="material-icons-round text-sm">arrow_forward</span>
                                 </button>
                             </div>
                             <div className="w-full overflow-x-auto">
                                 <table className="w-full text-left min-w-[560px]">
-                                    <thead className="text-[10px] uppercase text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                                    <thead className="text-[9px] md:text-[10px] uppercase text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
                                         <tr>
                                             <th className="pb-3 font-semibold">Student</th>
                                             <th className="pb-3 font-semibold">Class</th>
@@ -276,40 +216,40 @@ const TeacherDashboard: React.FC = () => {
                                             <th className="pb-3 font-semibold text-right">Last Active</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-[12px] md:text-sm">
                                         {allStudents.length > 0 ? allStudents.slice(0, 8).map((student) => {
                                             const cls = classData.find(c => c.students.some(s => s.participant_id === student.participant_id));
                                             return (
                                                 <tr
                                                     key={student.participant_id}
                                                     className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                                                    onClick={() => navigate('/student-analysis')}
+                                                    onClick={() => openStudentAnalysis(student.participant_id, cls?.classId)}
                                                 >
-                                                    <td className="py-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-base overflow-hidden shrink-0">
+                                                    <td className="py-2 md:py-3">
+                                                        <div className="flex items-center gap-2 md:gap-3">
+                                                            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm md:text-base overflow-hidden shrink-0">
                                                                 {student.avatar
-                                                                    ? <span className="text-lg">{student.avatar}</span>
-                                                                    : <span className="material-icons-round text-slate-400 text-lg">person</span>
+                                                                    ? <span className="text-base md:text-lg">{student.avatar}</span>
+                                                                    : <span className="material-icons-round text-slate-400 text-base md:text-lg">person</span>
                                                                 }
                                                             </div>
-                                                            <span className="font-semibold group-hover:text-[#3b82f6] transition-colors">{student.full_name}</span>
+                                                            <span className="font-semibold dark:text-white group-hover:text-[#3b82f6] transition-colors">{student.full_name}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 text-slate-500 text-xs">{cls?.className || '—'}</td>
-                                                    <td className="py-3 text-center">
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${stateColor(student.current_state)}`}>
+                                                    <td className="py-2 md:py-3 text-slate-500 dark:text-slate-400 text-[10px] md:text-xs">{cls?.className || '—'}</td>
+                                                    <td className="py-2 md:py-3 text-center">
+                                                        <span className={`text-[9px] md:text-[10px] font-bold px-1.5 md:px-2 py-0.5 rounded-full uppercase ${stateColor(student.current_state)}`}>
                                                             {student.current_state.replace(/_/g, ' ')}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 text-center">
-                                                        <span className={`font-bold text-sm ${student.recentEventCount > 0 ? 'text-[#3b82f6]' : 'text-slate-400'}`}>
+                                                    <td className="py-2 md:py-3 text-center">
+                                                        <span className={`font-bold text-sm ${student.recentEventCount > 0 ? 'text-[#3b82f6]' : 'text-slate-400 dark:text-slate-500'}`}>
                                                             {student.recentEventCount}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 text-right text-xs text-slate-500">
+                                                    <td className="py-2 md:py-3 text-right text-[10px] md:text-xs text-slate-500 dark:text-slate-400">
                                                         <div className="flex items-center justify-end gap-1">
-                                                            <span className={`material-icons-round text-xs ${loadDotColor(student.avg_load)}`}>circle</span>
+                                                            <span className={`material-icons-round text-[8px] md:text-[10px] ${loadDotColor(student.avg_load)}`}>circle</span>
                                                             {formatLastActive(student.last_active)}
                                                         </div>
                                                     </td>
@@ -326,10 +266,10 @@ const TeacherDashboard: React.FC = () => {
                         </div>
 
                         {/* ── Cognitive Load Overview ── */}
-                        <div className="col-span-12 xl:col-span-4 bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                            <h2 className="font-bold text-lg mb-6">Cognitive Load Overview</h2>
+                        <div className="col-span-12 xl:col-span-4 bg-card-light dark:bg-card-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                            <h2 className="font-bold text-base md:text-lg mb-5 md:mb-6 dark:text-white">Cognitive Load Overview</h2>
                             <div className="flex flex-col gap-6 items-center">
-                                <div className="relative w-36 h-36 shrink-0">
+                                <div className="relative w-32 h-32 md:w-36 md:h-36 shrink-0">
                                     <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                                         <path className="stroke-current text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" />
                                         <path className="stroke-current text-emerald-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"
@@ -343,14 +283,14 @@ const TeacherDashboard: React.FC = () => {
                                             strokeDasharray={`${(overallDistribution.struggling / (totalStudents || 1)) * 100}, 100`}
                                             strokeDashoffset={-(((overallDistribution.optimal + overallDistribution.low) / (totalStudents || 1)) * 100)}
                                             strokeLinecap="round" strokeWidth="3" />
-                                        <path className="stroke-current text-red-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"
+                                        <path className="stroke-current text-red-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"
                                             strokeDasharray={`${(overallDistribution.critical / (totalStudents || 1)) * 100}, 100`}
                                             strokeDashoffset={-(((overallDistribution.optimal + overallDistribution.low + overallDistribution.struggling) / (totalStudents || 1)) * 100)}
                                             strokeLinecap="round" strokeWidth="3" />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-3xl font-bold">{totalStudents}</span>
-                                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Students</span>
+                                        <span className="text-2xl md:text-3xl font-bold dark:text-white">{totalStudents}</span>
+                                        <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest">Students</span>
                                     </div>
                                 </div>
                                 <div className="w-full space-y-3">
@@ -358,13 +298,13 @@ const TeacherDashboard: React.FC = () => {
                                         { label: 'Optimal', count: overallDistribution.optimal, color: 'bg-emerald-400' },
                                         { label: 'Normal', count: overallDistribution.low, color: 'bg-blue-400' },
                                         { label: 'Struggling', count: overallDistribution.struggling, color: 'bg-amber-400' },
-                                        { label: 'Critical', count: overallDistribution.critical, color: 'bg-red-400' },
+                                        { label: 'Critical', count: overallDistribution.critical, color: 'bg-red-500' },
                                     ].map(item => (
                                         <div key={item.label} className="flex items-center gap-2">
                                             <div className={`w-2 h-2 rounded-full ${item.color}`}></div>
-                                            <span className="text-slate-500 text-sm flex-1">{item.label}</span>
-                                            <span className="font-bold">{item.count}</span>
-                                            <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                            <span className="text-slate-500 dark:text-slate-400 text-[12px] md:text-sm flex-1">{item.label}</span>
+                                            <span className="font-bold dark:text-white">{item.count}</span>
+                                            <div className="w-12 md:w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full rounded-full ${item.color}`}
                                                     style={{ width: `${((item.count / (totalStudents || 1)) * 100)}%` }}
@@ -377,16 +317,16 @@ const TeacherDashboard: React.FC = () => {
                         </div>
 
                         {/* ── Adaptation Type Breakdown ── */}
-                        <div className="col-span-12 lg:col-span-6 bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                            <h2 className="font-bold text-lg mb-5">Adaptation State Breakdown</h2>
-                            <p className="text-xs text-slate-400 mb-5">Distribution of current adaptation states across all students</p>
+                        <div className="col-span-12 lg:col-span-6 bg-card-light dark:bg-card-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                            <h2 className="font-bold text-base md:text-lg mb-4 md:mb-5 dark:text-white">Adaptation State Breakdown</h2>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-4 md:mb-5">Distribution of current adaptation states across all students</p>
                             <div className="space-y-4">
                                 {[
-                                    { label: 'Calm', key: 'calm', color: 'bg-emerald-400', textColor: 'text-emerald-600 dark:text-emerald-400', desc: 'Normal layout applied' },
-                                    { label: 'Mild Stress', key: 'mildstress', color: 'bg-amber-400', textColor: 'text-amber-600 dark:text-amber-400', desc: 'Dyslexic font + read aloud enabled' },
-                                    { label: 'High Stress', key: 'highstress', color: 'bg-red-500', textColor: 'text-red-600 dark:text-red-400', desc: 'Calming widget shown' },
-                                    { label: 'Distracted', key: 'distracted', color: 'bg-blue-400', textColor: 'text-blue-600 dark:text-blue-400', desc: 'Bionic reading + dim inactive' },
-                                    { label: 'Disengaged', key: 'disengaged', color: 'bg-purple-400', textColor: 'text-purple-600 dark:text-purple-400', desc: 'Full re-engagement mode' },
+                                    { label: 'Calm', key: 'calm', color: 'bg-emerald-400', textColor: 'text-emerald-600 dark:text-emerald-400', desc: 'Normal layout' },
+                                    { label: 'Mild Stress', key: 'mildstress', color: 'bg-amber-400', textColor: 'text-amber-600 dark:text-amber-400', desc: 'Dyslexic font + Read aloud' },
+                                    { label: 'High Stress', key: 'highstress', color: 'bg-red-500', textColor: 'text-red-500 dark:text-red-400', desc: 'Maximum simplified layout' },
+                                    { label: 'Distracted', key: 'distracted', color: 'bg-blue-400', textColor: 'text-blue-600 dark:text-blue-400', desc: 'Bionic reading focus' },
+                                    { label: 'Disengaged', key: 'disengaged', color: 'bg-purple-400', textColor: 'text-purple-600 dark:text-purple-400', desc: 'Gamified re-engagement' },
                                 ].map(item => {
                                     const count = stateCounts[item.key as keyof typeof stateCounts] || 0;
                                     const pct = totalStudents > 0 ? Math.round((count / totalStudents) * 100) : 0;
@@ -395,10 +335,10 @@ const TeacherDashboard: React.FC = () => {
                                             <div className="flex items-center justify-between mb-1">
                                                 <div className="flex items-center gap-2">
                                                     <div className={`w-2.5 h-2.5 rounded-full ${item.color}`}></div>
-                                                    <span className="text-sm font-semibold">{item.label}</span>
-                                                    <span className="text-[10px] text-slate-400">{item.desc}</span>
+                                                    <span className="text-[12px] md:text-sm font-semibold dark:text-white">{item.label}</span>
+                                                    <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 block hidden md:inline">{item.desc}</span>
                                                 </div>
-                                                <span className={`text-sm font-bold ${item.textColor}`}>{count} <span className="text-slate-400 font-normal">({pct}%)</span></span>
+                                                <span className={`text-[12px] md:text-sm font-bold ${item.textColor}`}>{count} <span className="text-slate-400 dark:text-slate-500 font-normal">({pct}%)</span></span>
                                             </div>
                                             <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                 <div
@@ -413,33 +353,38 @@ const TeacherDashboard: React.FC = () => {
                         </div>
 
                         {/* ── Critical Intervention Queue ── */}
-                        <div className="col-span-12 lg:col-span-6 bg-card-light dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center gap-2 mb-5">
-                                <h2 className="font-bold text-lg text-red-500">Critical Intervention Queue</h2>
-                                <span className="material-icons-round text-red-300 text-lg">warning</span>
+                        <div className="col-span-12 lg:col-span-6 bg-card-light dark:bg-card-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                            <div className="flex items-center gap-2 mb-4 md:mb-5">
+                                <h2 className="font-bold text-base md:text-lg text-red-500">Critical Intervention Queue</h2>
+                                <span className="material-icons-round text-red-300 dark:text-red-900/50 text-base md:text-lg">warning</span>
                             </div>
                             <div className="space-y-3">
                                 {interventionQueue.length > 0 ? interventionQueue.map((student) => (
                                     <div
                                         key={student.participant_id}
-                                        className="flex items-center gap-4 bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/20 hover:shadow-sm transition-all cursor-pointer"
-                                        onClick={() => navigate('/student-analysis')}
+                                        className="flex items-center gap-3 md:gap-4 bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/20 hover:shadow-sm transition-all cursor-pointer"
+                                        onClick={() => {
+                                            const studentClass = classData.find((cls) =>
+                                                cls.students.some((s) => s.participant_id === student.participant_id)
+                                            );
+                                            openStudentAnalysis(student.participant_id, studentClass?.classId);
+                                        }}
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl shadow-sm border border-red-200 shrink-0">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-base md:text-xl shadow-sm border border-red-200 dark:border-red-900/30 shrink-0">
                                             {student.avatar || <span className="material-icons-round text-slate-400">person</span>}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-bold text-red-700 dark:text-red-400 truncate">{student.full_name}</div>
-                                            <div className="text-xs text-red-500 font-medium">{student.current_state.replace(/_/g,' ')} · load {student.avg_load.toFixed(1)}</div>
+                                            <div className="font-bold text-red-700 dark:text-red-400 truncate text-[13px] md:text-sm">{student.full_name}</div>
+                                            <div className="text-[10px] md:text-xs text-red-500 font-medium">{student.current_state.replace(/_/g,' ')} · load {student.avg_load.toFixed(1)}</div>
                                         </div>
-                                        <div className="text-xs text-slate-400 shrink-0">{formatLastActive(student.last_active)}</div>
-                                        <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors shrink-0">
+                                        <div className="text-[10px] text-slate-400 shrink-0 hidden sm:block">{formatLastActive(student.last_active)}</div>
+                                        <button className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors shrink-0 border border-red-100 dark:border-red-900/20 shadow-sm">
                                             <span className="material-icons-round text-sm">visibility</span>
                                         </button>
                                     </div>
                                 )) : (
-                                    <div className="py-8 text-center text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                        <span className="material-icons-round text-3xl mb-2 block text-slate-300">check_circle</span>
+                                    <div className="py-8 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                        <span className="material-icons-round text-3xl mb-2 block text-slate-300 dark:text-slate-700">check_circle</span>
                                         No students need immediate intervention.
                                     </div>
                                 )}
