@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../utils/supabase';
 import TeacherSidebar from '../components/TeacherSidebar';
-import { useTheme } from '../context/ThemeContext';
 
 interface ClassData {
     id: string;
@@ -15,9 +13,7 @@ interface ClassData {
 }
 
 const ClassManagement: React.FC = () => {
-    const navigate = useNavigate();
     const { user } = useAuth();
-    const { isDark } = useTheme();
     const [classes, setClasses] = useState<ClassData[]>([]);
     const [loading, setLoading] = useState(true);
 

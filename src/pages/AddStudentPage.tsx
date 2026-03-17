@@ -6,12 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../utils/supabase';
 import { SECRET_ICONS, AVATAR_EMOJIS } from '../constants/emojiConstants';
 import TeacherSidebar from '../components/TeacherSidebar';
-import { useTheme } from '../context/ThemeContext';
 
 const AddStudentPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { isDark } = useTheme();
 
     // Form State
     const [studentName, setStudentName] = useState('');

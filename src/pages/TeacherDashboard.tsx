@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../utils/supabase';
 import { studentMetricsApi, type ClassMetrics } from '../services/studentMetricsApi';
 import TeacherSidebar from '../components/TeacherSidebar';
-import { useTheme } from '../context/ThemeContext';
 
 // ─── Helpers ───────────────────────────────────────────────────────
 function formatLastActive(dateStr: string): string {
@@ -39,7 +38,6 @@ function loadDotColor(load: number) {
 const TeacherDashboard: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { isDark } = useTheme();
     const [teacherName, setTeacherName] = useState('');
     const [classData, setClassData] = useState<ClassMetrics[]>([]);
     const [loading, setLoading] = useState(true);

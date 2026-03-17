@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { studentMetricsApi, type ClassMetrics, type StudentDetails } from '../services/studentMetricsApi';
 import TeacherSidebar from '../components/TeacherSidebar';
-import { useTheme } from '../context/ThemeContext';
 
 // ─── Colors ────────────────────────────────────────────────────────
 const STATE_COLORS: Record<string, { bg: string, text: string, dot: string, timeline: string }> = {
@@ -80,10 +79,8 @@ function engagementColor(level: string) {
 
 // ─── Component ─────────────────────────────────────────────────────
 const StudentAnalysis: React.FC = () => {
-    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
-    const { isDark } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
