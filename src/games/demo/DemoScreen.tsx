@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameLayout, StoryPanel } from './components/GameLayout';
 import { InteractionPanel } from './components/InteractionPanel';
 import { CharacterGuide } from './components/CharacterGuide';
@@ -12,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { InteractionLog } from './demoTypes';
 
 export default function DemoScreen() {
+    const navigate = useNavigate();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [currentSceneId, setCurrentSceneId] = useState<string>('c1_s1');
     const [storyLogs, setStoryLogs] = useState<InteractionLog[]>([]);
@@ -73,6 +75,16 @@ export default function DemoScreen() {
         return (
             <GameLayout>
                 <video ref={videoRef} className="hidden" playsInline muted autoPlay />
+                <div className="relative z-30 flex justify-start">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/dashboard')}
+                        className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-gray-700 shadow-md transition hover:bg-white"
+                    >
+                        <span className="material-symbols-outlined text-xl leading-none">arrow_back</span>
+                        Dashboard
+                    </button>
+                </div>
                 <div className="flex flex-col items-center justify-center h-full gap-8 z-20 relative">
                     <h1 className="text-5xl font-bold text-green-700 bg-white/80 px-12 py-8 rounded-full shadow-xl text-center leading-tight">
                         The Storybook is Repaired!
@@ -95,6 +107,14 @@ export default function DemoScreen() {
                     </div>
 
                     <CharacterGuide assistLevel={0} />
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/dashboard')}
+                        className="rounded-full bg-green-600 px-6 py-3 text-lg font-semibold text-white shadow-lg transition hover:bg-green-700"
+                    >
+                        Back to Dashboard
+                    </button>
                 </div>
             </GameLayout>
         );
@@ -105,6 +125,16 @@ export default function DemoScreen() {
     return (
         <GameLayout>
             <video ref={videoRef} className="hidden" playsInline muted autoPlay />
+            <div className="relative z-30 flex justify-start mb-4">
+                <button
+                    type="button"
+                    onClick={() => navigate('/dashboard')}
+                    className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-gray-700 shadow-md transition hover:bg-white"
+                >
+                    <span className="material-symbols-outlined text-xl leading-none">arrow_back</span>
+                    Dashboard
+                </button>
+            </div>
             <StoryPanel text={scene.storyText} assistLevel={assistLevel} />
 
             <InteractionPanel

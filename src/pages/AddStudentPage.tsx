@@ -80,6 +80,7 @@ const AddStudentPage: React.FC = () => {
                         id: newParentId,
                         role: 'parent',
                         full_name: parentName.trim() || 'Unknown Parent',
+                        teacher_id: user?.id
                     })
                     .select()
                     .single();
